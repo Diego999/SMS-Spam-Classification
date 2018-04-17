@@ -6,6 +6,7 @@ import math
 import numpy as np
 
 
+######### PREPROCESSING #########
 def replace_url(text):
     text = re.sub('((http|ftp|https)://)?([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?', '<url>', text)  # replace urls by <url>
     text = re.sub('(http|ftp|https)://.+\<url\>', '<url>', text)
@@ -225,3 +226,62 @@ def compute_all_representation(data, filepath='./data/spam_preprocessed.pkl'):
 
     return data, word_to_index, word_to_index_we, index_we_to_emb
 
+
+######### TRANSFORM SAMPLE TO VECTORIAL FORMS #########
+def pad(vectors, pad_index=0, max_sequence=None):
+    if max_sequence is None or max_sequence < 0:
+        max_sequence = max([len(vector) for vector in vectors])
+
+    for i in range(len(vectors)):
+        while(len(vectors[i]) < max_sequence):
+            vectors[i].append(pad_index)
+
+    return vectors
+
+
+def transform_for_naive(samples, word_to_index, max_sequence=None):
+    output = []
+    for sample in samples:
+        output.append(sample['naive'])
+
+    output = pad(output, word_to_index['PAD'], max_sequence)
+    return np.array(output)
+
+
+def transform_for_bag_of_words(samples, word_to_index):
+    output = []
+    for sample in samples:
+        vector = np.zeros(len(word_to_index))
+        for index in sample['bag_of_words']:
+            vector[index] += 1
+        output.append(vector)
+
+    return np.array(output)
+
+
+def transform_for_tfidf(samples):
+    output = []
+    for sample in samples:
+        output.append(sample['tfidf'])
+
+    return np.array(output)
+
+
+def transform_for_word_embeddings(samples, word_to_index_we, index_we_to_emb, max_sequence=None):
+    output = []
+    for sample in samples:
+        output.append(sample['word_embeddings'])
+
+    output = pad(output, word_to_index_we['PAD'], max_sequence)
+    for i in range(len(output)):
+        output[i] = np.array([index_we_to_emb[index] if index in index_we_to_emb else index_we_to_emb[word_to_index_we['UNK']] for index in output[i]])
+
+    return np.array(output)
+
+
+def transform_for_sentence_embeddings(samples):
+    output = []
+    for sample in samples:
+        output.append(sample['sentence_embeddings'])
+
+    return np.array(output)

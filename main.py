@@ -1,4 +1,4 @@
-from utils import get_data, compute_all_representation
+from utils import get_data, compute_all_representation, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings
 
 if __name__ == '__main__':
     data = get_data()
@@ -24,3 +24,9 @@ if __name__ == '__main__':
         - word_embeddings:  List of indices from word_to_index_we. Later, these indices will be mapped to the embeddings of index_we_to_emb
         - sentence_embeddings: Vector of 600 dimensions representing the sentence embeddings.
     '''
+
+    X_naive = transform_for_naive(data, word_to_index)
+    X_bow = transform_for_bag_of_words(data, word_to_index)
+    X_tfidf = transform_for_tfidf(data)
+    X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
+    X_se = transform_for_sentence_embeddings(data)

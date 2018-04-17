@@ -149,6 +149,17 @@ def compute_tfidf_representation(data, word_to_index):
     return data
 
 
+def compute_sentence_embeddings_representation(data):
+    import sent2vec
+    sent2vec_model = sent2vec.Sent2vecModel()
+    sent2vec_model.load_model('../DocAgg/lib/sent2vec/wiki_bigrams.bin')
+    sentences = [' '.join(sample['tokens']) for sample in data]
+    sentence_embeddings = sent2vec_model.embed_sentences(sentences)
+    for i, sentence_embedding in enumerate(sentence_embeddings):
+        data[i]['sentence_embeddings'] = sentence_embedding
+    return data
+
+
 def get_data(filepath='./data/spam.csv'):
     filepath_pkl = filepath.replace('csv', 'pkl')
 

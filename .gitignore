@@ -101,3 +101,5 @@ ENV/
 .mypy_cache/
 lib/*
 .idea/*
+
+data/spam_preprocessed.pkl

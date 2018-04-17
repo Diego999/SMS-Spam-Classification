@@ -85,7 +85,7 @@ def compute_naive_representation(data):
             if len(lemma) > 2 and lemma not in ['...', '..'] and lemma not in stopwords:
                 word_to_index.add(lemma)
 
-    word_to_index = {word:i for i, word in enumerate(['UNK'] + sorted(word_to_index))}
+    word_to_index = {word:i for i, word in enumerate(['PAD'] + ['UNK'] + sorted(word_to_index))}
     for sample in data:
         sample['naive'] = [word_to_index[lemma.lower()] if lemma.lower() in word_to_index else word_to_index['UNK'] for lemma in sample['lemmas']]
 
@@ -149,6 +149,45 @@ def compute_tfidf_representation(data, word_to_index):
     return data
 
 
+def compute_word_embeddings_representation(data):
+    vocabulary = set()
+    for sample in data:
+        for token in sample['tokens']:
+            vocabulary.add(token.lower())
+
+    vocabulary = sorted(vocabulary)
+    temp_file = 'query.txt'
+    with open(temp_file, 'w', encoding='utf-8') as fp:
+        for token in vocabulary:
+            fp.write(token + '\n')
+
+    from subprocess import call
+    call('./lib/fastText/fasttext print-word-vectors ./lib/fastText/wiki.en.bin < {} > {}.out'.format(temp_file, temp_file), shell=True)
+
+    word_embeddings = []
+    with open(temp_file+'.out', 'r', encoding='utf-8') as fp:
+        for line in fp:
+            line = line.strip()
+            vals = line.split(' ')
+            word, emb = vals[0], np.array(vals[1:])
+            word_embeddings.append(emb)
+            assert vocabulary[len(word_embeddings)-1] == word
+    assert len(word_embeddings) == len(vocabulary)
+
+    os.remove(temp_file)
+    os.remove(temp_file+'.out')
+
+    vocabulary = ['PAD'] + ['UNK'] + vocabulary
+    word_to_index_we = {word:i for i, word in enumerate(vocabulary)}
+    word_embeddings = [np.zeros(word_embeddings[0].shape)] + [np.random.uniform(-0.05, 0.05, word_embeddings[0].shape)] + word_embeddings
+    index_we_to_emb = {i:emb for i, emb in enumerate(word_embeddings)}
+
+    for sample in data:
+        sample['word_embeddings'] = [word_to_index_we[token.lower()] if token.lower() in word_to_index_we else word_to_index_we['UNK'] for token in sample['tokens']]
+
+    return data, word_to_index_we, index_we_to_emb
+
+
 def compute_sentence_embeddings_representation(data):
     import sent2vec
     sent2vec_model = sent2vec.Sent2vecModel()
@@ -172,4 +211,17 @@ def get_data(filepath='./data/spam.csv'):
 
     return data
 
+
+def compute_all_representation(data, filepath='./data/spam_preprocessed.pkl'):
+    if not os.path.exists(filepath):
+        data, word_to_index = compute_naive_representation(data)
+        data = compute_bag_of_words_representation(data, word_to_index)
+        data = compute_tfidf_representation(data, word_to_index)
+        data, word_to_index_we, index_we_to_emb = compute_word_embeddings_representation(data)
+        data = compute_sentence_embeddings_representation(data)
+        pickle.dump([data, word_to_index, word_to_index_we, index_we_to_emb], open(filepath, 'wb'))
+    else:
+        data, word_to_index, word_to_index_we, index_we_to_emb = pickle.load(open(filepath, 'rb'))
+
+    return data, word_to_index, word_to_index_we, index_we_to_emb
 

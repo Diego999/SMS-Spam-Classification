@@ -49,7 +49,7 @@ def read_data(filepath='./data/spam.csv'):
         reader = csv.reader(fp)
         for i, row in enumerate(reader):
             data.append({'id':i, 'text':row[1], 'type':row[0]})
-    return data[1:] # Ignore headers
+    return data
 
 
 def tokenize_lemmatize(data):
@@ -285,3 +285,10 @@ def transform_for_sentence_embeddings(samples):
         output.append(sample['sentence_embeddings'])
 
     return np.array(output)
+
+
+def create_labels(samples):
+    output = []
+    for sample in samples:
+        output.append(1 if sample['type'] == 'spam' else 0)
+    return output

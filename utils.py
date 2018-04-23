@@ -4,6 +4,8 @@ import pickle
 import os
 import math
 import numpy as np
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
 
 
 ######### PREPROCESSING #########
@@ -292,3 +294,12 @@ def create_labels(samples):
     for sample in samples:
         output.append(1 if sample['type'] == 'spam' else 0)
     return output
+
+
+######### VISUALIZATION #########
+def visualize_tsne(X, Y):
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+    tsne_results = tsne.fit_transform(X, Y)
+    plt.figure(figsize=(10, 5))
+    plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=Y)
+    plt.show()

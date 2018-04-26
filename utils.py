@@ -355,9 +355,17 @@ def create_labels(samples):
 
 
 ######### VISUALIZATION #########
-def visualize_tsne(X, Y):
-    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+def visualize_tsne(X, Y, filename):
+    tsne = TSNE(n_components=2)
     tsne_results = tsne.fit_transform(X, Y)
     plt.figure(figsize=(10, 5))
-    plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=Y)
-    plt.show()
+
+    ham_indices = np.where(Y == 0)
+    ham_plot = plt.scatter(tsne_results[ham_indices, 0], tsne_results[ham_indices, 1], c='b', marker='.')
+
+    spam_indices = np.where(Y > 0)
+    spam_plot = plt.scatter(tsne_results[spam_indices, 0], tsne_results[spam_indices, 1], c='r', marker='.')
+
+    plt.legend((ham_plot, spam_plot), ('Ham', 'Spam'))
+    plt.title('Ham vs Spam messages')
+    plt.savefig('out/plot_representations/' + filename + '.png', bbox_inches='tight', dpi=200)

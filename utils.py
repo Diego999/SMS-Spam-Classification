@@ -351,7 +351,7 @@ def create_labels(samples):
     output = []
     for sample in samples:
         output.append(1 if sample['type'] == 'spam' else 0)
-    return output
+    return np.array(output)
 
 
 ######### VISUALIZATION #########

@@ -292,6 +292,13 @@ def pad(vectors, pad_index=0, max_sequence=None):
     return vectors
 
 
+def transform_for_topics(samples):
+    output = []
+    for sample in samples:
+        output.append([x[1] for x in sorted(sample['topics'].items(), key=lambda x:x[0], reverse=False)])
+    return np.array(output)
+
+
 def transform_for_naive(samples, word_to_index, max_sequence=None):
     output = []
     for sample in samples:

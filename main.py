@@ -1,4 +1,4 @@
-from utils import get_data, compute_all_representation, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne
+from utils import get_data, compute_all_representation, transform_for_topics, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne
 from utils import get_topics
 
 if __name__ == '__main__':
@@ -33,6 +33,7 @@ if __name__ == '__main__':
     X_tfidf = transform_for_tfidf(data)
     X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
     X_se = transform_for_sentence_embeddings(data)
+    X_topics = transform_for_topics(data)
     Y = create_labels(data)
 
     visualize_tsne(X_se, Y)

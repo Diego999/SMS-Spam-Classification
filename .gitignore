@@ -103,3 +103,4 @@ lib/*
 .idea/*
 
 data/spam_preprocessed.pkl
+out/*

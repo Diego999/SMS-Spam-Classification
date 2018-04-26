@@ -113,11 +113,15 @@ def tokenize_lemmatize(data):
             ann = client.annotate(replace_email(replace_phone(replace_url(sample['text']))))
             tokens = []
             lemmas = []
+            pos = []
             for sent in ann.sentence:
                 tokens += [format_token(token.word) for token in sent.token]
                 lemmas += [format_token(token.lemma) for token in sent.token]
+                pos += [token.pos for token in sent.token]
+
             sample['tokens'] = tokens
             sample['lemmas'] = lemmas
+            sample['pos'] = pos
     return data
 
 

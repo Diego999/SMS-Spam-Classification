@@ -28,12 +28,12 @@ if __name__ == '__main__':
         - sentence_embeddings: Vector of 600 dimensions representing the sentence embeddings.
     '''
 
-    X_topics = transform_for_topics(data)
     X_naive = transform_for_naive(data, word_to_index)
     X_bow = transform_for_bag_of_words(data, word_to_index)
     X_tfidf = transform_for_tfidf(data)
     X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
     X_se = transform_for_sentence_embeddings(data)
+    X_topics = transform_for_topics(data)
     Y = create_labels(data)
 
     visualize_tsne(X_topics, Y, 'topics')

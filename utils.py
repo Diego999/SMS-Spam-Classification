@@ -8,6 +8,57 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
 
+def get_topics(data, filepath='./data/spam_topics.pkl'):
+    if not os.path.exists(filepath):
+        import pyLDAvis.gensim
+        from gensim.corpora import Dictionary
+        from gensim.models import LdaModel, CoherenceModel
+
+        texts = [sample['lemmas'] for sample in data]
+
+        dictionary = Dictionary(texts)
+        dictionary.filter_extremes(no_below=20, no_above=0.4)
+        corpus = [dictionary.doc2bow(text) for text in texts]
+
+        chunksize = 500
+        passes = 5
+        iterations = 400
+        eval_every = None
+
+        temp = dictionary[0]  # This is only to "load" the dictionary.
+        id2word = dictionary.id2token
+
+        best_coherence = 0
+        best_model_filepath = ''
+        for num_topics in list(range(2, 20)):
+            for alpha in ['asymmetric', 'symmetric']:
+                for eta in ['symmetric', 'auto']:
+                    filepath = 'out/topics/{}_{}_{}'.format(num_topics, alpha, eta)
+                    model = LdaModel(corpus=corpus, id2word=id2word, chunksize=chunksize, alpha='auto', eta='auto', iterations=iterations, num_topics=num_topics, passes=passes, eval_every=eval_every)
+                    coherence = float(CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v').get_coherence())
+                    filepath += '_{:.4f}'.format(coherence)
+                    model.save(filepath + '_model.pkl')
+
+                    prepared = pyLDAvis.gensim.prepare(model, corpus, dictionary)
+                    pyLDAvis.save_html(prepared, filepath + '_plot.html')
+
+                    if coherence > best_coherence:
+                        best_coherence = coherence
+                        best_model_filepath = filepath + '_model.pkl'
+
+        model = LdaModel.load(best_model_filepath)
+        print('Best model: {}'.format(best_model_filepath))
+
+        topics = [x[0] for x in model.top_topics(corpus=corpus, texts=texts, dictionary=dictionary, topn=100)]
+        for i, text in enumerate(texts):
+            data[i]['topics'] = {k: v for k, v in model.get_document_topics(dictionary.doc2bow(text), minimum_probability=0.0)}
+        pickle.dump([topics, data], open(filepath, 'wb'))
+    else:
+        [topics, data] = pickle.load(open(filepath, 'rb'))
+
+    return topics, data
+
+
 ######### PREPROCESSING #########
 def replace_url(text):
     text = re.sub('((http|ftp|https)://)?([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?', '<url>', text)  # replace urls by <url>

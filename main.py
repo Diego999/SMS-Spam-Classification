@@ -1,7 +1,9 @@
 from utils import get_data, compute_all_representation, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne
+from utils import get_topics
 
 if __name__ == '__main__':
     data = get_data()
+    topics, data = get_topics(data)
     data, word_to_index, word_to_index_we, index_we_to_emb = compute_all_representation(data)
 
     '''
@@ -16,6 +18,7 @@ if __name__ == '__main__':
         - type: ham/spam from spam.csv
         - tokens: tokens obtained via tokenization. They are not lowered
         - lemmas: lemmas obtained via lemmazitazion. They are lowered
+        - topics: Topic distribution w.r.t to "topics" list
         - naive: list of indices from word_to_index. The index corresponding to "UNK" is used for unknown tokens (e.g. stopwords)
                  Later will become a null vector where indices would representing dimensions where value is one
         - bag_of_words: similar to naive but unknown words are ignored.

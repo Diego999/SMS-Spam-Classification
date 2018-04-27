@@ -102,5 +102,5 @@ ENV/
 lib/*
 .idea/*
 
-data/spam_preprocessed.pkl
+data/*.pkl
 out/*

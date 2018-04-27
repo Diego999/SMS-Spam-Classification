@@ -102,5 +102,5 @@ ENV/
 lib/*
 .idea/*
 
-data/*.pkl
+data/*.*
 out/*

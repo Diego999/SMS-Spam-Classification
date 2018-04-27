@@ -104,3 +104,7 @@ lib/*
 
 data/*.*
 out/*
+
+data/spam_topics.pkl
+
+data/spam.pkl

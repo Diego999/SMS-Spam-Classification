@@ -3,6 +3,7 @@ import re
 import pickle
 import os
 import math
+import random
 import numpy as np
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -50,11 +51,17 @@ def get_topics(data, filepath='./data/spam_topics.pkl'):
         print('Best model: {}'.format(best_model_filepath))
 
         topics = [x[0] for x in model.top_topics(corpus=corpus, texts=texts, dictionary=dictionary, topn=100)]
+
+        data_topics = []
         for i, text in enumerate(texts):
-            data[i]['topics'] = {k: v for k, v in model.get_document_topics(dictionary.doc2bow(text), minimum_probability=0.0)}
-        pickle.dump([topics, data], open(filepath, 'wb'))
+            data_topics.append({k: v for k, v in model.get_document_topics(dictionary.doc2bow(text), minimum_probability=0.0)})
+
+        pickle.dump([topics, data_topics], open(filepath, 'wb'))
     else:
-        [topics, data] = pickle.load(open(filepath, 'rb'))
+        [topics, data_topics] = pickle.load(open(filepath, 'rb'))
+
+    for i in range(len(data_topics)):
+        data[i]['topics'] = data_topics[i]
 
     return topics, data
 
@@ -262,6 +269,10 @@ def get_data(filepath='./data/spam.csv'):
 
     if not os.path.exists(filepath_pkl):
         data = read_data()
+
+        random.seed(28111993)
+        random.shuffle(data)
+
         data = tokenize_lemmatize(data)
         pickle.dump(data, open(filepath_pkl, 'wb'))
     else:
@@ -296,57 +307,106 @@ def pad(vectors, pad_index=0, max_sequence=None):
     return vectors
 
 
-def transform_for_topics(samples):
-    output = []
-    for sample in samples:
-        output.append([x[1] for x in sorted(sample['topics'].items(), key=lambda x:x[0], reverse=False)])
+def transform_for_topics(samples, filename='data/spam_topic_rep.pkl'):
+    if not os.path.exists(filename):
+        output = []
+        for sample in samples:
+            output.append([x[1] for x in sorted(sample['topics'].items(), key=lambda x:x[0], reverse=False)])
+        output = np.array(output)
+
+        with open(filename, 'wb') as fp:
+            pickle.dump(output, fp)
+    else:
+        with open(filename, 'rb') as fp:
+            output = pickle.load(fp)
+
+    return output
+
+
+def transform_for_naive(samples, word_to_index, max_sequence=None, filename='data/spam_naive_rep.pkl'):
+    if not os.path.exists(filename):
+        output = []
+        for sample in samples:
+            output.append(sample['naive'])
+        output = np.array(pad(output, word_to_index['PAD'], max_sequence))
+
+        with open(filename, 'wb') as fp:
+            pickle.dump(output, fp)
+    else:
+        with open(filename, 'rb') as fp:
+            output = pickle.load(fp)
+
+    return output
+
+
+def transform_for_bag_of_words(samples, word_to_index, filename='data/spam_bow_rep.pkl'):
+    if not os.path.exists(filename):
+        output = []
+        for sample in samples:
+            vector = np.zeros(len(word_to_index))
+            for index in sample['bag_of_words']:
+                vector[index] += 1
+            output.append(vector)
+        output = np.array(output)
+
+        with open(filename, 'wb') as fp:
+            pickle.dump(output, fp)
+    else:
+        with open(filename, 'rb') as fp:
+            output = pickle.load(fp)
+
+    return output
+
+
+def transform_for_tfidf(samples, filename='data/spam_tfidf_rep.pkl'):
+    if not os.path.exists(filename):
+        output = []
+        for sample in samples:
+            output.append(sample['tfidf'])
+        output = np.array(output)
+
+        with open(filename, 'wb') as fp:
+            pickle.dump(output, fp)
+    else:
+        with open(filename, 'rb') as fp:
+            output = pickle.load(fp)
+
+    return output
+
+
+def transform_for_word_embeddings(samples, word_to_index_we, index_we_to_emb, max_sequence=None, filename='data/spam_word_emb_rep.pkl'):
+    if not os.path.exists(filename):
+        output = []
+        for sample in samples:
+            output.append(sample['word_embeddings'])
+        output = pad(output, word_to_index_we['PAD'], max_sequence)
+
+        for i in range(len(output)):
+            output[i] = np.array([index if index in index_we_to_emb else word_to_index_we['UNK'] for index in output[i]])
+        output = np.array(output)
+
+        with open(filename, 'wb') as fp:
+            pickle.dump(output, fp)
+    else:
+        with open(filename, 'rb') as fp:
+            output = pickle.load(fp)
+
     return np.array(output)
 
 
-def transform_for_naive(samples, word_to_index, max_sequence=None):
-    output = []
-    for sample in samples:
-        output.append(sample['naive'])
+def transform_for_sentence_embeddings(samples, filename='data/spam_sent_emb_rep.pkl'):
+    if not os.path.exists(filename):
+        output = []
+        for sample in samples:
+            output.append(sample['sentence_embeddings'])
 
-    output = pad(output, word_to_index['PAD'], max_sequence)
-    return np.array(output)
+        output = np.array(output)
 
-
-def transform_for_bag_of_words(samples, word_to_index):
-    output = []
-    for sample in samples:
-        vector = np.zeros(len(word_to_index))
-        for index in sample['bag_of_words']:
-            vector[index] += 1
-        output.append(vector)
-
-    return np.array(output)
-
-
-def transform_for_tfidf(samples):
-    output = []
-    for sample in samples:
-        output.append(sample['tfidf'])
-
-    return np.array(output)
-
-
-def transform_for_word_embeddings(samples, word_to_index_we, index_we_to_emb, max_sequence=None):
-    output = []
-    for sample in samples:
-        output.append(sample['word_embeddings'])
-
-    output = pad(output, word_to_index_we['PAD'], max_sequence)
-    for i in range(len(output)):
-        output[i] = np.array([index_we_to_emb[index] if index in index_we_to_emb else index_we_to_emb[word_to_index_we['UNK']] for index in output[i]])
-
-    return np.array(output)
-
-
-def transform_for_sentence_embeddings(samples):
-    output = []
-    for sample in samples:
-        output.append(sample['sentence_embeddings'])
+        with open(filename, 'wb') as fp:
+            pickle.dump(output, fp)
+    else:
+        with open(filename, 'rb') as fp:
+            output = pickle.load(fp)
 
     return np.array(output)
 
@@ -359,8 +419,15 @@ def create_labels(samples):
 
 
 ######### VISUALIZATION #########
-def visualize_tsne(X, Y, filename):
+def visualize_tsne(X, Y, filename, index_we_to_emb=None):
     tsne = TSNE(n_components=2)
+
+    if index_we_to_emb is not None:
+        X_copy = X.tolist()
+        for i in range(len(X_copy)):
+            X_copy[i] = np.array([np.array(index_we_to_emb[index]) for index in X_copy[i]])
+        X = np.array(X_copy)
+
     tsne_results = tsne.fit_transform(X, Y)
     plt.figure(figsize=(10, 5))
 

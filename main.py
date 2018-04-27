@@ -1,8 +1,9 @@
 from utils import get_data, compute_all_representation, transform_for_topics, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne
 from utils import get_topics
+from utils_ML import *
 
 if __name__ == '__main__':
-    data = get_data()
+    data = get_data() # The data are already shuffled
     data, word_to_index, word_to_index_we, index_we_to_emb = compute_all_representation(data)
     topics, data = get_topics(data)
 
@@ -36,4 +37,51 @@ if __name__ == '__main__':
     X_topics = transform_for_topics(data)
     Y = create_labels(data)
 
+    '''
+    visualize_tsne(X_naive, Y, 'naive')
+    visualize_tsne(X_bow, Y, 'bow')
+    visualize_tsne(X_tfidf, Y, 'tfidf')
+    #Not possible as we have 3D inputs visualize_tsne(X_we, Y, 'word_emb', index_we_to_emb)
+    visualize_tsne(X_se, Y, 'sent_emb')
     visualize_tsne(X_topics, Y, 'topics')
+    #'''
+
+    TRAINING_SIZE = 0.7
+    VALIDATION_SIZE = 0.1
+    TESTING_SIZE = 0.2
+
+    X, key = (X_se, 'Sentence Embeddings')
+    classes = [0, 1]
+
+    training_size = int(len(X)*TRAINING_SIZE)
+    validation_size = int(len(X)*VALIDATION_SIZE)
+    testing_size = len(X) - training_size - validation_size
+    assert training_size + validation_size + testing_size == len(X)
+
+    X_train, Y_train = X[:training_size], Y[:training_size]
+    X_valid, Y_valid = X[training_size:training_size + validation_size], Y[training_size:training_size + validation_size]
+    X_test, Y_test = X[training_size + validation_size:], Y[training_size + validation_size:]
+
+    # Because we are tuning with CV, with can use X_train = X_train + X_valid
+    X_train = np.array(X_train.tolist() + X_valid.tolist())
+    Y_train = np.array(Y_train.tolist() + Y_valid.tolist())
+
+    classifiers = [('linear', linear_model.LogisticRegression(solver='lbfgs')),
+                   ('RandomForest', RandomForestClassifier(n_estimators=20)),
+                   ('SVM Linear', SVC(kernel='linear')),
+                   ('SVM RBF', SVC(kernel='rbf')),
+                   ('MLP', MLPClassifier(early_stopping=True))]
+    for clf_name, clf in classifiers:
+        print(clf_name)
+        # Should find the best set of parameters, might use the tune function in utils_ML
+        clf.fit(np.array(X_train), np.array(Y_train))
+        Y_hat = clf.predict(np.array(X_test))
+        print_and_get_accuracy(Y_test, Y_hat)
+        print_and_get_precision_recall_fscore_support(Y_test, Y_hat)
+        print_and_get_macro_micro_weighted_fscore(Y_test, Y_hat)
+        print_and_get_classification_report(Y_test, Y_hat, classes)
+        plot_confusion(Y_test, Y_hat, classes, key + ' - ' + clf_name)
+        plot_roc(Y_test, Y_hat, classes, key + ' - ' + clf_name)
+        plot_prec_rec_curve(Y_test, Y_hat, classes, key + ' - ' + clf_name)
+    plt.show()
+

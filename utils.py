@@ -440,3 +440,26 @@ def visualize_tsne(X, Y, filename, index_we_to_emb=None):
     plt.legend((ham_plot, spam_plot), ('Ham', 'Spam'))
     plt.title('Ham vs Spam messages')
     plt.savefig('out/plot_representations/' + filename + '.png', bbox_inches='tight', dpi=200)
+
+
+def word_cloud(topics):
+    from wordcloud import WordCloud
+    import matplotlib.gridspec as gridspec
+    num_topics = len(topics)
+
+    cols = 2
+    rows = int(num_topics / cols)
+
+    plt.figure(figsize=(rows, cols))
+    gs1 = gridspec.GridSpec(rows, cols)
+    gs1.update(wspace=0.25, hspace=0.25)
+    for t in range(num_topics):
+        ax1 = plt.subplot(gs1[t])
+        plt.axis('off')
+        plt.title("Topic #" + str(t + 1))
+        ax1.set_aspect('equal')
+        x = topics[t]
+        x = {v: k for k, v in x}  # convert from list to dict
+        plt.imshow(WordCloud(background_color='white').fit_words(x), interpolation='nearest', aspect='auto')
+    plt.show()
+    #plt.savefig('out/topics_visualization/word_cloud.png', bbox_inches='tight', dpi=200)

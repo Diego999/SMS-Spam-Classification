@@ -1,12 +1,18 @@
-from utils import get_data, compute_all_representation, transform_for_topics, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne
+from utils import get_data, compute_all_representation, transform_for_topics, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne, word_cloud
 from utils import get_topics
 from utils_ML import *
-from sklearn import linear_model, ensemble, svm, neural_network, naive_bayes
+from sklearn import linear_model, ensemble, svm, neural_network, naive_bayes, tree
+import os
+import time
+
 
 if __name__ == '__main__':
     data = get_data() # The data are already shuffled
     data, word_to_index, word_to_index_we, index_we_to_emb = compute_all_representation(data)
     topics, data = get_topics(data)
+    '''
+    word_cloud({i:x for i, x in enumerate(topics)})
+    #'''
 
     '''
     word_to_index_we -> mapping from a lowered token into an index to be mapped for word embeddings
@@ -69,7 +75,8 @@ if __name__ == '__main__':
     VALIDATION_SIZE = 0.1
     TESTING_SIZE = 0.2
     seed = 28111993
-    classes = [0, 1]
+    classes = [0, 1] #0:ham, 1:spam
+    show_plot = False
 
     representation_sets = [(X_naive, 'Naive'),
                            (X_bow, 'Bag Of Words'),
@@ -85,6 +92,10 @@ if __name__ == '__main__':
                            (X_se_topics, 'Sentence Embeddings - Topics'),
                             ]
     for X, key in representation_sets:
+        data_rep_folder = 'out/training/{}'.format(key)
+        if not os.path.exists(data_rep_folder):
+            os.makedirs(data_rep_folder)
+
         training_size = int(len(X)*TRAINING_SIZE)
         validation_size = int(len(X)*VALIDATION_SIZE)
         testing_size = len(X) - training_size - validation_size
@@ -102,23 +113,68 @@ if __name__ == '__main__':
                        ('Naive Bayes - Multinomial', naive_bayes.MultinomialNB()),
                        ('Naive Bayes - Gaussian', naive_bayes.GaussianNB()),
                        ('Logistic Regression', linear_model.LogisticRegression(solver='lbfgs', random_state=seed)),
+                       ('Decision Tree', tree.DecisionTreeClassifier(random_state=seed)),
                        ('RandomForest', ensemble.RandomForestClassifier(n_estimators=20, random_state=seed)),
                        ('SVM Linear', svm.SVC(kernel='linear', random_state=seed)),
                        ('SVM RBF', svm.SVC(kernel='rbf', random_state=seed)),
                        ('AdaBoost', ensemble.AdaBoostClassifier(algorithm='SAMME.R', random_state=seed)),
-                       ('MLP', neural_network.MLPClassifier(early_stopping=True, random_state=seed))]
+                       ('Feedforward Neural Network', neural_network.MLPClassifier(early_stopping=True, random_state=seed))]
 
+        all_Y_hats = []
+        all_scores = []
         for clf_name, clf in classifiers:
+            data_rep_method_folder = '{}/{}'.format(data_rep_folder, clf_name.replace(' ', '_'))
+            if not os.path.exists(data_rep_method_folder):
+                os.mkdir(data_rep_method_folder)
+
+            if 'Naive' in clf_name and 'Multinomial' in clf_name and 'Embeddings' in key:
+                #input might be negative
+                all_Y_hats.append([])
+                all_scores.append([(k, 0) for k, v in all_scores[-1]])
+                continue
+
             print(clf_name)
             # Should find the best set of parameters, might use the tune function in utils_ML
+            start_training_time = time.time()
             clf.fit(np.array(X_train), np.array(Y_train))
-            Y_hat = clf.predict(np.array(X_test))
-            print_and_get_accuracy(Y_test, Y_hat)
-            print_and_get_precision_recall_fscore_support(Y_test, Y_hat)
-            print_and_get_macro_micro_weighted_fscore(Y_test, Y_hat)
-            print_and_get_classification_report(Y_test, Y_hat, classes)
-            plot_confusion(Y_test, Y_hat, classes, key + ' - ' + clf_name)
-            plot_roc(Y_test, Y_hat, classes, key + ' - ' + clf_name)
-            plot_prec_rec_curve(Y_test, Y_hat, classes, key + ' - ' + clf_name)
-        plt.show()
+            end_training_time = time.time()
 
+            start_testing_time = time.time()
+            Y_hat = clf.predict(np.array(X_test))
+            end_testing_time = time.time()
+
+            all_Y_hats.append(Y_hat)
+
+            accuracy = print_and_get_accuracy(Y_test, Y_hat)
+            precision, recall, fscore, support = print_and_get_precision_recall_fscore_support(Y_test, Y_hat)
+            macro, micro, weighted = print_and_get_macro_micro_weighted_fscore(Y_test, Y_hat)
+            classification_report = print_and_get_classification_report(Y_test, Y_hat, classes)
+            scores = [('accuracy', accuracy),
+                      ('precision', ' '.join([str(x) for x in precision])),
+                      ('recall', ' '.join([str(x) for x in recall])),
+                      ('fscore', ' '.join([str(x) for x in fscore])),
+                      ('support', ' '.join([str(x) for x in support])),
+                      ('macro_f1', macro), # Compute P & R on for each class and then take the average --> Needed to handle imbalanced dataset
+                      ('micro_f1', micro), # Add up everything together and then compute P & R
+                      ('weighted_f1', weighted),
+                      ('classification_report', classification_report),
+                      ('training_time', end_training_time - start_training_time),
+                      ('testing_time', end_testing_time - start_testing_time)
+                     ]
+            all_scores.append(scores)
+
+            with open(data_rep_method_folder + '/scores.txt', 'w', encoding='utf-8') as fp:
+                for metric, score in scores:
+                    fp.write('{}\t\t{}\n'.format(metric, score))
+
+            plot_confusion(Y_test, Y_hat, classes, key + ' - ' + clf_name, show=show_plot, save=True, path_to_save=data_rep_method_folder)
+            plot_roc(Y_test, Y_hat, classes, key + ' - ' + clf_name, show=show_plot, save=True, path_to_save=data_rep_method_folder)
+            plot_prec_rec_curve(Y_test, Y_hat, classes, key + ' - ' + clf_name, show=show_plot, save=True, path_to_save=data_rep_method_folder)
+
+        if show_plot:
+            plt.show()
+
+        # Write summary of all the model with this representation
+        with open('{}/summary_{}.txt'.format(data_rep_folder, key.replace(' ', '_')), 'w', encoding='utf-8') as fp:
+            for (clf_name, _), Y_hat, score in zip(classifiers, all_Y_hats, all_scores):
+                fp.write('{}\t\t{}\t\t{}\t\t{}\n'.format(clf_name, score[5], score[-2], score[-1])) #score[5] = macro_f1, -2 training time, -1 testing time

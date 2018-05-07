@@ -51,7 +51,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.xlabel('Predicted label')
 
 
-def plot_confusion(Y_testing, Y_hat, classes, key):
+def plot_confusion(Y_testing, Y_hat, classes, key, show=False, save=True, path_to_save=None):
     # Compute confusion matrix
     cnf_matrix = confusion_matrix(Y_testing, Y_hat)
     np.set_printoptions(precision=2)
@@ -59,9 +59,16 @@ def plot_confusion(Y_testing, Y_hat, classes, key):
     # Plot non-normalized confusion matrix
     plt.figure()
     plot_confusion_matrix(cnf_matrix, classes=['Class {}'.format(k) for k in range(len(classes))], title=key + ' Confusion matrix, without normalization')
+    if save and path_to_save is not None:
+        plt.savefig('{}/{}.png'.format(path_to_save, 'confusion_matrix_without_normalization.png'), bbox_inches='tight', dpi=200)
+
     plt.figure()
     plot_confusion_matrix(cnf_matrix, classes=['Class {}'.format(k) for k in range(len(classes))], normalize=True, title=key + ' Confusion matrix, with normalization')
-    plt.draw()
+    if save and path_to_save is not None:
+        plt.savefig('{}/{}.png'.format(path_to_save, 'confusion_matrix_with_normalization.png'), bbox_inches='tight', dpi=200)
+
+    if show:
+        plt.draw()
 
 
 def print_and_get_accuracy(Y_testing, Y_hat):
@@ -97,7 +104,7 @@ def print_and_get_classification_report(Y_testing, Y_hat, classes):
     return res
 
 
-def plot_roc(Y_testing, Y_hat, classes, key):
+def plot_roc(Y_testing, Y_hat, classes, key, show=False, save=True, path_to_save=None):
     Y_testing_onehot = np.array([[1, 0] if y == 0 else [0, 1] for y in Y_testing.tolist()])
     Y_hat_onehot = np.array([[1, 0] if y == 0 else [0, 1] for y in Y_hat.tolist()])
 
@@ -145,10 +152,15 @@ def plot_roc(Y_testing, Y_hat, classes, key):
     plt.ylabel('True Positive Rate')
     plt.title(key + ' ROC')
     plt.legend(loc="lower right")
-    plt.draw()
+
+    if save and path_to_save is not None:
+        plt.savefig('{}/{}.png'.format(path_to_save, 'ROC.png'), bbox_inches='tight', dpi=200)
+
+    if show:
+        plt.draw()
 
 
-def plot_prec_rec_curve(Y_testing, Y_hat, classes, key):
+def plot_prec_rec_curve(Y_testing, Y_hat, classes, key, show=False, save=True, path_to_save=None):
     Y_testing_onehot = np.array([[1, 0] if y == 0 else [0, 1] for y in Y_testing.tolist()])
     Y_hat_onehot = np.array([[1, 0] if y == 0 else [0, 1] for y in Y_hat.tolist()])
 
@@ -200,7 +212,11 @@ def plot_prec_rec_curve(Y_testing, Y_hat, classes, key):
     plt.title(key + ' Precision-Recall curve')
     plt.legend(lines, labels, loc=(0, -.38), prop=dict(size=14))
 
-    plt.draw()
+    if save and path_to_save is not None:
+        plt.savefig('{}/{}.png'.format(path_to_save, 'PR.png'), bbox_inches='tight', dpi=200)
+
+    if show:
+        plt.draw()
 
 
 def tune(clf, X, Y, param_dist, n_iter_search=3):

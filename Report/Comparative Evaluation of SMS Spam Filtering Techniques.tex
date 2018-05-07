@@ -105,6 +105,9 @@ This model implements regularized logistic regression using a limited-memory BFG
 	c^* = \underset{c \in \mathcal{C}}{\arg \min} f(c) 
 \end{equation}
 
+\subsubsection{Decision Tree} \label{Decision Tree}
+\note{TODO as we use it thereafter}
+
 \subsubsection{Random Forest}  \label{Random Forest}
 
 We utilize a random forest meta-classifier which fits a number of decision tree classifiers on various sub-samples of the dataset and uses averaging to improve the predictive accuracy and control over-fitting. 
@@ -113,7 +116,7 @@ We utilize a random forest meta-classifier which fits a number of decision tree 
 
 We have utilized and compared two support vector machine classifiers, one with a linear and one with radial basis function (rbf) kernel. 
 
-\subsubsection{Multi-layer Perceptron}  \label{Multi-layer Perceptron}
+\subsubsection{Feedforward Neural Network}  \label{Feedforward Neural Network}
 
 This model implements a multi-layer perceptron classifier with a rectified linear unit activation function. The weight optimization is being performed using Adam \cite{DBLP:journals/corr/KingmaB14}, an algorithm based on adaptive estimates of lower-order moments. Adam has the advantages of being computationally efficient, and has low memory requirements, which is ideal for deployment in real scenarios with large datasets used by telecommunication providers, and/or in mobile devices.
 

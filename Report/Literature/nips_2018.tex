@@ -1,0 +1,369 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+% \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading nips_2018
+
+% ready for submission
+%\usepackage{nips_2018}
+
+\usepackage[final]{nips_2018}
+
+% to compile a preprint version, e.g., for submission to arXiv, add
+% add the [preprint] option:
+% \usepackage[preprint]{nips_2018}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+% \usepackage[final]{nips_2018}
+
+% to avoid loading the natbib package, add option nonatbib:
+% \usepackage[nonatbib]{nips_2018}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage[pdftex]{graphicx} 
+
+\title{Learning to Create Sentence Semantic Relation Graphs for Multi-Document Summarization}
+
+\author{
+  Diego~Antognini\\
+  Artificial Intelligence Laboratory\\
+  École Polytechnique Fédérale de Lausanne\\
+  Lausanne, Switzerland\\
+  \texttt{diego.antognini@epfl.ch} \\
+   \And
+  Boi~Faltings\\
+  Artificial Intelligence Laboratory\\
+  École Polytechnique Fédérale de Lausanne\\
+  Lausanne, Switzerland\\
+  \texttt{boi.faltings@epfl.ch} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Facts can be expressed by a huge amount of sentences, which complicates the task of multi-document summarization. In this paper, we present \textit{SemSentSum}, a fully data-driven model able to leverage sentence similarities by using universal sentence embeddings in order to build a sentence semantic relation graph and later, train specialized sentence embeddings for the task of multi-document summarization. We show that these two components are the keys of \textit{SemSentSum} to achieve competitive results with other state-of-the-art models. We also devise a new greedy sentence selection method where sentence redundancies are computed using sentence embeddings. Finally, there is no need of hand-crafted features nor additional annotated data and therefore, \textit{SemSentSum} can be used in real scenarios.
+
+\end{abstract}
+
+\section{Introduction}
+
+%To make the paper appealing, the introduction and 
+%conclusions have to stress that this is not realistic 
+%and that our method is designed to be completely data driven.
+
+%Maybe this 
+%should also be reflected in the title, rather than 
+%"using..." say "without external knowledge", for example.
+%Another way of 
+%presenting would be to say "Learning to create 
+%sentence semantic relation graphs for multi-document summarization". 
+
+%Another point is to point out what novel technique enables this, and 
+%how it might apply elsewhere. Is the key idea using 
+%sentence embeddings rather than words? This novel aspect needs to be 
+%highlighted, and we could speculate that it helps 
+%elsewhere as well (finding similar sentences in general). Stressing this 
+%rather than the performance on multi-document 
+%summarization would make the paper a lot more attractive for a general 
+%conference such as NIPS (as opposed to a 
+%computational linguistics conference where people would focus more on 
+%the performance on the summarization task). 
+
+Nowadays, information from the Web is overwhelming us from all sides and compels the need of automated multi-document summarization systems in order to produce high quality summaries. Extractive multi-document summarization, where the final summary is composed of sentences in the input documents, has been tackled by a large range of approaches. In the meanwhile, only an handful of researchers have studied abstractive multi-document summarization due to a lack of large datasets except the recent work of \citet{wiki2018}, who create and use a large dataset based on Wikipedia (not yet public). Consequently, we only focus on extractive multi-document summarization.
+
+Generally, summarization systems outputs summaries in two steps: sentence ranking followed by sentence selection. The first estimates an importance score of each sentence and the second chooses which ones to select by taking into account 1) their importance and 2) their redundancy among other sentences and the current summary. Most of the time, all sentences in the same collection of documents are processed independently and therefore, their relationships are lost. Due to the lack of data, models are generally forced to either heavily rely on well-designed features at the word level (\citet{hong2014improving, cao2015ranking, christensen2013towards}) or take advantage of other large manually annotated data and then apply transfer learning (\citet{CaoLLW17}). In realistic scenarios, features are hard to craft and gathering additional annotated data is very expensive.
+
+In this work, we present \textit{SemSentSum}, a competitive fully data-driven model which does not depend on neither hand-crafted features nor additional data. It relies on the idea that sentence embeddings are able to capture the syntactic and semantic of sentences. We emphasize the fact that lot of ways exist to express a same sentence and unfortunately, this can not be handled by using only words as commonly done. Consequently, we first integrate universal sentence embeddings knowledge to build our sentence semantic relation graph so as to encapsulate sentence similarities. %These are typically trained on a corpus composed of high quality texts and thus, allow to cover a lot of contexts for each encountered words and sentences.
+Secondly, in order to be related to the domains tackled by the collections of documents, we train specialized sentence embeddings by utilizing a sentence encoder in our model. Afterwards, we leverage the knowledge of our sentence semantic relation graph and the fine-grained sentence embeddings with a graph convolutional network (\citet{KipfW16}). %Then we employ an attention mechanism to align generated high-level hidden features for individual sentences with the context of the current collection of documents.
+Finally, we employ a greedy strategy to produce summaries being informative and non-redundant by taking advantage of sentence embeddings to detect redundancies between candidate sentences and the current summary.
+
+To the best of our knowledge, we are the first to leverage universal sentence embeddings in order to build a sentence relation graph and train more specialized sentence embeddings for the task of multi-document summarization. However, our method can be applied for other tasks such as information cascade, query-focused summarization, keyphrase extraction or information retrieval. In addition, we also are the first to propose a novel redundancy detection method based on sentence embedding while generating the final summary. Finally, we propose a fully data-driven model which does not need neither additional data nor hand-crafted features and is competitive with state-of-the-art systems.
+
+%The rest of this paper is organized as follows: Section \ref{sec:related_work} presents the related work for multi-document summarization models. Our model \textit{SemSentSum} is described in Section \ref{sec:method}. We conduct experiments on three different axis and present the corresponding results in Section \ref{sec:experiments}. Finally, our work is concluded in Section \ref{sec:conclusion}. 
+
+\section{Related Work}
+\label{sec:related_work}
+Extractive multi-document summarization has been tackled by a large range of approaches. On one hand, lot of graph-based methods exist. \citet{Radev2000} introduces a cross-document structure theory as a basis to build multi-document summarization. Few years later, \citet{Erkan2004} propose LexRank, an unsupervised multi-document summarizer based on the concept of eigenvector centrality in a graph of sentences. Other works exploit shallow or deep features from the graph's topology (\citet{Mihalcea_alanguage, Wan2006, ANTIQUEIRA2009584}). \citet{Wan2008} pairs graph-based methods (e.g. random walk) with clustering. \citet{Mei20101} improve results by using a reinforced random walk model to rank sentences and keep non-redundant ones. A novel system by \citet{christensen2013towards} does sentence selection while balancing coherence and saliency. They build a graph which approximates discourse relations across sentences (\citet{mann88b}).% such as discourse markers, deverbal noun reference, co-referent mentions etc. 
+
+On the other hand, different viable methods are available such as Maximum Marginal Relevance (\citet{Carbonell1998}) using a greedy approach to select sentences and consider the tradeoff between relevance and redundancy, support vector regression (\citet{li2007multi}), conditional random field (\citet{Galley2006}), or hidden makov model (\citet{conroy2004left}). Some others rely on n-grams regression as in \citet{hong2014improving, li2013using, Conroy2006}. More recently, \citet{cao2015ranking} build a recursive neural network trying to find automatically combination of hand-crafted features. \citet{CaoLLW17} employ a neural model for text classification on a large manually annotated dataset and apply transfer learning for multi-document summarization afterwards. Surprisingly, neural networks work well for multi-document summarization even with small datasets.
+
+The closest work to ours is \citet{Yasunaga17}. They create a normalized version of the approximate discourse graph (\citet{christensen2013towards}) where sentence nodes are normalized over all the incoming edges. Then, they feed a neural network composed of a sentence encoder, three graph convolutional layers, one document encoder and an attention mechanism. Afterwards, they greedily select sentences using tf-idf similarity to detect redundant sentences. However, our model differs in three ways: 1) we build our sentence semantic relation graph by using pre-trained sentence embeddings with cosine similarity and neither heavy preprocessing (besides tokenization) nor hand-crafted features. Thus our model is fully data-driven. 2) \textit{SemSentSum} is a smaller model having similar sentence encoder and attention mechanism but less graph convolutional layers and no document encoder. 3) Our method for summary generation is also different as we leverage sentence embeddings to compute the redundancy between a candidate sentence and the current summary while \citet{Yasunaga17, hong2014improving, cao2015ranking, CaoLLW17} utilize tf-idf approaches.
+
+\section{Method}
+\label{sec:method}
+Let $C$ denote a collection of related documents composed of a set of documents~$\{D_i|i \in [1,N]\}$ where $N$ is the number of documents. Moreover, each document~$D_i$ consists of a set of sentences $\{S_{i,j}|j \in [1,M]\}$, $M$ being the number of sentences in $D_i$. Given a collection of related documents~$C$, our goal is to produce a summary~$Sum$ using a subset of these in the input documents ordered in some way, such that $Sum = (S_{i_1,j_1},S_{i_2,j_2},...,S_{i_n,j_m})$. 
+
+In this section, we describe how our summarization system, called \textit{SemSentSum}, estimates the salience score of each sentence and how it selects a subset of these to create the final summary. The whole architecture of \textit{SemSentSum} is depicted in Figure~\ref{fig:architecture}.
+
+In order to perform sentence selection, we first build our novel sentence semantic relation graph where each vertex is a sentence and edges capture the semantic similarity among them. Afterwards, each sentence is fed into a recurrent neural network, as sentence encoder, so as to generate sentence embeddings using the last hidden states. Thereafter, a graph convolutional neural network is applied on top where the sentence semantic relation graph is the adjacency matrix and the sentence embeddings are the node features. Then, the sentences are aligned with the cluster context via an attention mechanism in order to compute an estimate salience score representing how much salient is a sentence with respect to the final summary. Finally, based on the latter we devise an innovative greedy method, which leverages sentence embeddings to detect redundant sentences and select sentences until reaching the summary length limit. 
+
+\begin{figure}
+  \centering
+  \includegraphics[width=1.0\linewidth]{Figures/Architecture.png}
+  \caption{Overview of \textit{SemSentSum}. This illustration includes two documents in the collection where the first one has three sentences and the second two. A sentence semantic relation graph is firstly built and each sentence node is processed by an encoder network thereafter. A graph convolutional network is applied on top and produces high-level hidden features for individual sentences. Finally, salience scores are estimated using an attention mechanism aligning sentences with cluster context.}
+  \label{fig:architecture}
+\end{figure}
+
+\subsection{Sentence Semantic Relation Graph}
+\label{ssrg}
+We model the semantic relationship among sentences using a graph representation. In this graph, each vertex is a sentence $S_{i,j}$ ($j$'th sentence of document $D_i$) from the collection documents $C$ and an undirected edge between $S_{i_u,j_u}$ and $S_{i_v,j_v}$ indicates their degree of similarity.
+In order to compute the semantic similarity, we leverage novel sentence embeddings techniques by using the model of~\citet{pgj2017unsup} trained on the English Wikipedia corpus. We process sentences by their model and compute the cosine similarity between every sentence pair. Having a complete graph does not allow the model to leverage much the semantic relation among sentences as every sentence pair is connected (i.e. the graph is complete). Furthermore, all edges have a similarity above zero as it is very unlikely that two sentence embeddings are completely orthogonal.
+
+To overcome this problem, we hereby introduce an edge removal method which overcomes the aforementioned shortcoming:~every edge below a certain threshold $t_{sim}^g$ is removed in order to emphasize focused sentence similarity. Nonetheless, $t_{sim}^g$ should not be too large otherwise the model will be prone to overfitting. After removing edges below $t_{sim}^g$, our sentence semantic relation graph is used as the adjacency matrix $A$ for the graph convolutional network (see Section~\ref{sub:gcn}).
+
+We hypothesize that incorporating general sentence embeddings into edges between sentences and later compute fine-grained sentence embeddings (see Section~\ref{sub:sentence_encoder}) for the goal of multi-document summarization is beneficial. As the pre-trained model uses English Wikipedia as source corpus, the corresponding texts are of high quality and therefore, allow to cover a lot of contexts for each encountered words as well as sentences. However, we still need more fine-grained sentence embeddings in order to be more related to the tackled domains of the collections of documents.
+
+Finally, we highlight that 1) these pre-trained sentence embeddings are only used to compute the weights of the edges and will not be used later by the model (as others will be produced by the sentence encoder, see Section~\ref{sub:sentence_encoder}) 2) the edge weights are static and will not change during training.
+
+\subsection{Sentence Encoder}
+\label{sub:sentence_encoder}
+
+Given a list of documents $C$, we encode each document's sentence $S_{i,j}$, where each sentence has at most $L$ words $(w_{i,j,1}, w_{i,j,2}, ..., w_{i,j,L})$. Every word is converted into word embeddings and then fed to the sentence encoder in order to compute sentence embeddings $S'_{i,j}$.
+We employ a two-layers forward recurrent neural network using Gated Recurrent Units (GRU) from~\citet{cho-gru} as sentence encoder and the sentence embeddings are extracted from the last hidden states. We choose GRU instead of Long Short-Term Memory (LSTM) (\citet{Hochreiter1997}), due to their reduced number of parameters and their comparable performance (\citet{cho-al-emnlp142}). We then concatenate all sentence embeddings into a matrix $X$ which constitutes the input node features that will be used by the graph convolutional network (see Section~\ref{sub:gcn}).
+
+\subsection{Graph Convolutional Network}
+\label{sub:gcn}
+
+Once we have sentence embeddings and the sentence semantic relation graph, we apply a Graph Convolutional Network (GCN) from~\citet{KipfW16} in order to capture high-level hidden features for each sentence, encapsulating sentence information as well as the graph-structure. We believe that that our sentence semantic relation graph contains information not present in the data and thus, we leverage this information by running graph convolutions.
+
+The GCN model takes as input the node features matrix $X$ containing all sentence embeddings of the collection of documents and a squared adjacency matrix $A$ being our underlying sentence semantic relation graph. It outputs hidden representations for each node that encode both local graph structure and nodes' features.
+ In order to take into account the sentences themselves during the information propagation, we add self-connections (i.e. the identity matrix) to $A$ such that $\tilde{A} = A + I$.
+ 
+Subsequently, we obtain our sentence hidden features by using Equation~\ref{gcn_eq}.
+\begin{equation}
+\label{gcn_eq}
+S''_{i,j} = f(X, A) = \textrm{ELU}(\tilde{A}\textrm{ ELU}(\tilde{A}XW_g^{(0)} + b_g^{(0)})W_g^{(1)} + b_g^{(1)})	
+\end{equation}
+ where $W_g^{(i)}$ is the weight matrix of the $i$'th graph convolution layer and $b^{(i)}$ the bias vector. 
+We choose Exponential Linear Unit (ELU) nonlinearity function from \citet{KlambauerUMH17} due to its ability to handle the vanishing gradient problem by making the mean activation close to zero and consequently, facilitates the backpropagation. By using only one hidden layer, as we only have one input-to-hidden layer and one hidden-to-output layer, we limit the information propagation to the first order neighborhood. Finally, GCN is a special form of Laplacian smoothing (\citet{li2018deeper}).
+
+\subsection{Saliency Estimation}
+
+We use an attention mechanism in order to estimate a salience score of each sentence. Given all sentence embeddings $S''{i,j}$, we compute a context embeddings so as to have a global view of the whole collection of documents. For this purpose, we take the mean of all sentence embeddings in the current documents using Equation~\ref{context_mean}.
+\begin{equation}
+\label{context_mean}
+	S^C = \frac{1}{M \cdot N}\sum_{i=0}^N\sum_{j=0}^M S''{i,j}
+\end{equation}
+
+Afterwards, we align the sentence embeddings with the context embeddings using Equation~\ref{att_align}, similarly to~\citet{BahdanauCB14, vinyals2015pointer, Yasunaga17}. 
+\begin{equation}
+\label{att_align}
+	f(S''_{i,j}) = v_a^T\textrm{tanh}(W_a^{(0)}S''{i,j} + W_a^{(1)}S^C)
+\end{equation}
+
+We then normalize the scores via softmax and obtain our estimated salience score $S^s_{i,j}$.% with Equation~\ref{att_softmax}.
+
+%\begin{equation}
+%\label{att_softmax}
+%	S^s_{i,j} = \frac{e^{f(S''_{i,j})}}{\sum_{D \in C} \sum_{S''' \in D} e^{f(S'''_{i,j})}}
+%\end{equation}
+
+\subsection{Training}
+
+Our model \textit{SemSentSum} is trained end-to-end to minimize the cross-entropy loss of Equation~\ref{crossentropy} between the salience score prediction and the normalized ROUGE score for each sentence, as in~\citet{cao2015ranking, Yasunaga17}. The learnable parameters of \textit{SemSentSum} are these of the sentence encoder and $W_g^{(0)}, b_g^{(0)}, W_g^{(1)}, b_g^{(1)}, W_a^{(0)}, W_a^{(1)}$ and $v_a$ as well.
+
+\begin{equation}
+\label{crossentropy}
+	\mathcal{L} = -\sum_C \sum_{D \in C} \sum_{S \in D} R(S)\textrm{log}S^s
+\end{equation}
+
+$R(S)$ is computed as being the average between ROUGE-1 and ROUGE-2 recall scores (see Section~\ref{sub:evaluation_metric} for more information about ROUGE scores), following the common practice in the area of single and multi-document summarization. Furthermore, we normalize the ROUGE scores with a rescaling factor $\alpha$ to make the distribution sharper, as in~\citet{Yasunaga17}. The intuition is that the scale of raw ROUGE scores is not necessarily good for a softmax normalization.
+%(i.e.~$R(S)~=~\textrm{softmax}(\alpha R(S))$)
+
+\subsection{Summary Generation Process}
+
+While our model \textit{SemSentSum} provides estimated saliency scores, we employ a simple innovative greedy strategy to offer a summary~$Sum$ being informative and non-redundant. We first discard sentences having less than $9$ words, as in~\citet{erkan2004lexrank}, and then sort them in descending order of their estimated salience scores. To create our final summary~$Sum$, we iteratively dequeue the sentence having the highest score and append it to the current summary if it is non-redundant with respect to~$Sum$. We iterate until reaching the summary length limit.
+
+We introduce a novel way to determine the redundancy of a candidate sentence with the current summary: a sentence is considered as non-redundant if and only if the cosine similarity between its sentence embeddings and the embeddings of the current summary is below a certain threshold $t_{sim}^s$. As in Section~\ref{sub:gcn}, we use the pre-trained model of~\citet{pgj2017unsup} to compute sentence as well as summary embeddings. We innovate by focusing on the semantic instead of word similarity like tf-idf approaches as in~\citet{hong2014improving, cao2015ranking, Yasunaga17, CaoLLW17}, which might not reflect meaning similarity.
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Datasets}
+
+Experiments are conducted on the most commonly used datasets for multi-document summarization from the Document Understanding Conferences (DUC).\footnote{https://www-nlpir.nist.gov/projects/duc/guidelines.html}. We use DUC 2001, 2002, 2003 and 2004 as the tasks of generic multi-document summarization because they have been carried out during these years. We use DUC~2001 and 2002 for training, DUC~2003 for validation and finally, DUC~2004 for testing as the common practice. The Table~\ref{DUC_summary} shows the number of clusters, documents, sentences and summary length limit for each of the dataset.
+
+\begin{table}
+  \caption{Statistics on the DUC datasets for multi-document summarization.}
+  \label{DUC_summary}
+  \centering
+  \begin{tabular}{ccccc}
+    \toprule
+    Year & \#Clusters & \#Documents & \#Sentences  & Summary Length Limit  \\
+    \hline
+    2001 & 30 & 309 & 11295 & 100 Words\\
+    2002 & 59 & 567 & 15878 & 100 Words\\
+    2003 & 30 & 298 & 7721 & 100 Words\\
+    2004 & 50 & 500 & 13280 & 665 Bytes\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Evaluation Metric}
+\label{sub:evaluation_metric}
+
+For the evaluation, we use ROUGE (\citet{Lin2004}) with the official parameters of DUC tasks and also truncate the summaries to 100 words for DUC 2001/2002/2003 and to 665 bytes for DUC 2004 (if not explicitly stated otherwise).\footnote{ROUGE-1.5.5 with options: -n 2 -m -u -c 95 -x -r 1000 -f A -p 0.5 -t 0 and -l 100 if using DUC 2001/2002/2003 otherwise -b 665.} Notably, we take ROUGE-1 and ROUGE-2 recall scores (in percent) as the main metrics for comparison between produced summaries and golden ones as proposed by \citet{Owczarzak2012}. The goal of the ROUGE-N metric is to compute the ratio of the number of N-grams from the generated summary matching these of the human reference summaries.
+
+\subsection{Model Settings}
+
+To define the edge weights of our sentence semantic relation graph, we employ the~$600$-dimensional pre-trained unigram model of \citet{pgj2017unsup} using English Wikipedia as source corpus. We keep only edges having a weight larger than~$t_{sim}^g = 0.5$. For word embeddings, the~$300$-dimensional pre-trained GloVe embeddings (\citet{pennington2014glove}) are used and not tuned during training.
+The output dimension of the sentence embeddings produced by the sentence encoder is the same as these of the word embeddings, i.e.~$300$. For the graph convolutional network, the number of hidden units is~$32$ and the size of the generated hidden feature vectors is also~$300$. The rescaling factor to make the ROUGE distribution sharper in the loss function is~$\alpha=40$ (tuned on the validation set). We use a batch size of~$1$, a learning rate of~$0.001$ using Adam (\citet{KingmaB14}) as optimizer. In order to make \textit{SemSentSum} generalize better, we use dropout (\citet{Srivastava2014}) of $0.4$, clip the gradient norm at~$1.0$ if higher, add L2-norm regularizer with a regularization factor of~$10^{-11}$ and train using early stopping with a patience of~$10$ iterations. Finally, the redundancy threshold $t_{sim}^s$ in the summary generation process is $0.8$. We train on a GeForce Titan Xp GPU in a couple of minutes.
+
+\subsection{Summarization Performance}
+
+We asset the performance of our model \textit{SemSentSum} by training it on DUC 2001/2002, tuning it on DUC 2003 and evaluating it on DUC 2004. In order to fairly compare \textit{SemSentSum} with more models available in the literature, experiments are conducted with summaries truncated to 665~bytes (official parameters of the DUC competition) but also with summaries with a length constraint of 100~words. %As baselines, we use similar models of \citet{bennani2018embedrank} and \citet{mani2017multi}. All results are reported with the official set of parameters of the DUC competition with either a summary length truncated to 665 bytes or 100 words. %We evaluate the produces summaries of \citet{christensen2013towards} using their released code with the appropriate metrics. All the other results obtained via the official set of parameters are reported from the literature.
+
+\subsection{Sentence Semantic Relation Graph Generation}
+
+We investigate miscellaneous methods to build the sentence semantic relation graph and vary the value of $t_{sim}^g$ from $0.0$ to $0.75$ to study the impact of the threshold cut-off. Among these:
+\begin{enumerate}
+	\item \textit{Cosine}: Using cosine similarity as in Section \ref{ssrg};
+	\item \textit{tf-idf}: Considering a node as the query and another as document. The weight corresponds to the similarity between the query and the document;
+	\item \textit{TextRank} (\citet{Mihalcea04TextRank}): A weighted graph is created where nodes are sentences and edges defined by a similarity measure based on word overlap. Afterwards, an algorithm similar to PageRank (\citet{Pageetal98}) is used to compute sentence importance and refined edge weights;
+	\item \textit{LexRank} (\citet{Erkan2004}): An unsupervised multi-document summarizer based on the concept of eigenvector centrality in a graph of sentences to set up the edge weights;
+	\item \textit{Approximate Discourse Graph} (ADG) (\citet{christensen2013towards}): Approximation of a discourse graph where nodes are sentences and an edge $(S_u,S_v)$ indicates the sentence $S_v$ can be placed right after $S_u$ in a coherent summary;
+	\item \textit{Personalized ADG} (PADG) (\citet{Yasunaga17}): Normalized version of ADG where sentence nodes are normalized over all the incoming edges.
+\end{enumerate}
+
+\subsection{Ablation Study}
+
+In order to quantify the contribution of the different components of \textit{SemSentSum}, we try variations of our model by removing different modules one at a time. Our three main elements are: the sentence encoder~(\textit{Sent}), the graph convolutional neural network~(\textit{GCN}) and the attention mechanism~(\textit{Att}). When we omit \textit{Sent}, we substitute it with the pre-trained sentence embeddings used in Section \ref{ssrg}.
+
+\subsection{Results and Discussion}
+
+Three axis are used to evaluate our model \textit{SemSentSum}: 1) the summarization performance to asset the capability of our proposed model 2) the impact of the sentence semantic relation graph generation using various methods and different thresholds $t_{sim}^g$ 3) an ablation study to analyze the importance of each component of \textit{SemSentSum}.
+
+\paragraph{Summarization Performance}
+All the results are reported in Table \ref{sum_perf}. Firstly, if we compare \textit{SemSentSum} with summary length of 665 bytes, we note that our model largely outperforms the baselines relying on sentence embeddings~(\citet{bennani2018embedrank}) or document embeddings~(\citet{mani2017multi}). In addition, \textit{SemSentSum} also beats 
+%a widely-used learning-based summarization method built on support vector regression (\citet{li2007multi}) as well as 
+a graph-based method based on approximating discourse graph (\citet{christensen2013towards}). Then comes the recursive neural networks of \citet{cao2015ranking} learning automatically combinations of hand-crafted features, therefore relying heavily on these. The last model to compare with is the model of \citet{CaoLLW17} using transfer learning from a text classifier model based on a domain-related dataset of $30'000$ documents (from New York Times having same tackled topics). Consequently, both models perform better because of the use of either rich set of hand-crafted features or an extra dataset $30$ times larger than the DUC ones. However, we emphasize that our model is fully data-driven and do not rely on 1)~hand-crafted features 2)~extra large manually annotated dataset and as a results, 3)~is usable in real scenarios. %Moreover, the whole training time lasts only a couple of minutes on a GeForce Titan Xp.
+
+\begin{table}
+  \caption{Comparison of \textit{SemSentSum} with various models published in the
+literature. Evaluation done using ROUGE-1/ROUGE-2 recall scores (\%) on DUC 2004 with 665 bytes/100 words summaries.}
+\label{sum_perf}
+  \centering
+  \begin{tabular}{lcccc}
+    \toprule
+    & \multicolumn{2}{c}{665 bytes summaries} & \multicolumn{2}{c}{100 words summaries} \\
+    Model & ROUGE-1 & ROUGE-2 & ROUGE-1 & ROUGE-2  \\
+    \hline
+    MMR \scriptsize{(\citet{bennani2018embedrank}}) & $35.49$ & $7.50$ & & \\
+    PV-DBOW+BS \scriptsize{(\citet{mani2017multi}}) & $36.10$ & $6.77$ & & \\
+    SVR \scriptsize{(\citet{li2007multi}}) & $36.18$ & $9.34$ & & \\
+    G-Flow \scriptsize{(\citet{christensen2013towards}}) & $37.38$ & $8.77$ & $35.30$ & $8.27$\\
+    R2N2 \scriptsize{(\citet{cao2015ranking}}) & $38.16$ & $9.52$ & & \\
+    TCSum \scriptsize{(\citet{CaoLLW17}}) & $38.27$ & $9.66$ & & \\
+    \hline
+    SemSentSum (Our model) & $37.69$ & $9.10$ & $38.46$ & $9.34$ \\
+    \hline
+    FreqSum \scriptsize{(\citet{Nenkova2006})} & & & $35.30$ & $8.11$\\
+    %TsSum \scriptsize{(\citet{Conroy2006})} & & &  $35.88$ & $8.15$\\
+    Cont. LexRank \scriptsize{(\citet{erkan2004lexrank})} & & &  $35.95$ & $7.47$\\
+	Centroid \scriptsize{(\citet{radev2004centroid})} & & &  $36.41$ & $7.97$\\
+    CLASSY11 \scriptsize{(\citet{conroy2011classy})} & & &  $37.22$ & $9.20$\\
+    CLASSY04 \scriptsize{(\cite{conroy2004left})} & & &  $37.62$ & $8.96$\\
+    GreedyKL \scriptsize{(\citet{Haghighi2009})} & & &  $37.98$ & $8.53$\\
+    GRU+GCN+PADG \scriptsize{(\citet{Yasunaga17})} & & &  $38.23$ & $9.48$\\
+    RegSum \scriptsize{(\citet{hong2014improving})} & & &  $38.57$ & $9.75$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Comparing with models producing longer summaries, i.e. 100 words, \textit{SemSentSum} outperforms commonly used baselines (\citet{Nenkova2006})
+% Conroy2006})
+ and traditional graph-based approaches such as \citet{radev2004centroid, erkan2004lexrank, christensen2013towards}. As can be seen, the best model in the DUC competition (\citet{conroy2004left}), its improved version (\citet{conroy2011classy}) and the greedy model of \citet{Haghighi2009} are underperforming compared to \textit{SemSentSum}. The model of \citet{Yasunaga17} relies on hand-crafted features to build the approximate discourse graph followed by a sentence encoder, three layers of graph convolutional networks, a document encoder and finally an attention mechanism. We perform better in term of ROUGE-1 score whereas slightly lower for ROUGE-2. However, our model is still competitive as 1)~does not rely on approximate discourse graph being heavy to build in term of preprocessing 2)~is much smaller because it depends on less layers of graph convolutional networks and does not need a document encoder. Finally, the model \textit{RegSum} (\citet{hong2014improving}) computes sentence saliences based on word scores, incorporating rich set of word-level features. Nonetheless, our model is still competitive and does not depend on hand-crafted features due to its full data-driven nature.
+
+\paragraph{Sentence Semantic Relation Graph}
+The Table \ref{ssrg_perf} shows the results of different methods to create the sentence semantic relation graph with various threshold $t_{sim}^g$. A first observation is that using cosine similarity with sentence embeddings significantly outperforms all other methods for ROUGE-1 and ROUGE-2 scores, mainly because it relies on the semantic of sentences instead of their individual words. A second is that different methods evolve similarly: \textit{PADG, Lexrank, tfidf} behave similarly to an U-shaped curve whereas \textit{Textrank} and \textit{ADG} seem to perform better while increasing thresholds. Finally, the cosine method is the only one following an inverted U-shaped curve. The reason behind this behavior is in consequence of its distribution being similar to a normal distribution because it relies on the semantic instead of words, while the others are more skewed towards zero.
+
+\begin{table}
+  \caption{ROUGE-1 and ROUGE-2 recall scores (\%) for various methods to build the sentence semantic relation graph with different thresholds $t_{sim}^g$, then run on top of it \textit{SemSentSum}.}
+  \label{ssrg_perf}
+  \centering
+  \begin{tabular}{lccccccccccc}
+    \toprule
+    & & \multicolumn{4}{c}{ROUGE-1} & & & \multicolumn{4}{c}{ROUGE-2}  \\
+    Method & $t_{sim}^g$ & $0.0$ & $0.25$ & $0.5$ & $0.75$ & & $t_{sim}^g$ & $0.0$ & $0.25$ & $0.5$ & $0.75$\\
+    \hline
+    cosine & & $36.96$ & $37.38$ & $37.69$ & $34.09$ & & & $8.62$ & $8.68$ & $9.10$ & $6.52$\\
+    tf-idf & & $33.97$ & $33.62$ & $33.18$ & $33.65$ & & & $6.48$ & $6.88$ & $6.07$ & $6.10$\\
+    Textrank & & $32.75$ & $32.69$ & $33.67$ & $33.81$ & & & $6.23$ & $6.27$ & $6.40$ & $6.42$\\
+    Lexrank & & $35.17$ & $34.59$ & $33.87$ & $33.97$ & & & $8.00$ & $7.52$ & $6.37$ & $6.68$\\
+    ADG & & $32.90$ & $33.71$ & $33.95$ & $34.02$ & & & $6.02$ & $6.40$ & $6.33$ & $6.69$\\
+    PADG & & $34.25$ & $33.37$ & $33.80$ & $33.95$ & & & $6.86$ & $6.12$ & $6.42$ & $6.42$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Ablation Study}
+We quantify the contribution of each module of \textit{SemSentSum} in Table \ref{abl_study}. Horizontal lines separate the number of components removed at the same time. By removing only one module, we observe that the drastic drop in term of performance is achieved when the graph convolutional network component is disabled. This emphasizes that relationship between sentences is indeed important and not present in the data itself. Moreover, this shows that our sentence semantic relation graph is able to capture sentence similarities by analyzing the semantic. Similarly, by removing the sentence encoder, another major decrease is noted, showing that using only universal sentence embeddings is not enough for the task of multi-document summarization and therefore, we need to leverage a more fine-tuned version for the domains tackled in DUC corpus. Finally, the attention mechanism seems to boost the capability of \textit{SemSentSum} with embeddings aligned with the context.
+
+As previously, removing the sentence encoder or the graph convolutional network in addition to the attention mechanism is still the most harmful, probably for the same reasons. However, an interesting point is by only letting the attention mechanism enabled, the model is still able to learn something in spite of having much worse results. Finally, when removing all components apart from the pre-trained sentence embeddings as only features, the model is unsurprisingly not learning and perform the worst.
+ 
+\begin{table}
+  \caption{Ablation test performance. \textit{Sent} corresponds to the sentence encoder, \textit{Att} the attention mechanism and \textit{GCN} the graph convolutional network.}% When \textit{Sent} is not used, the pre-trained sentence embeddings (of which the sentence semantic relation graph relies on) are employed instead.}
+  \label{abl_study}
+  \centering
+  \begin{tabular}{lcc}
+    \toprule
+    Model & ROUGE-1 & ROUGE-2  \\
+    \hline
+    \textit{SemSentSum} & $37.69$ & $9.10$\\
+    - w/o Att & $36.25$ & $8.37$\\
+    - w/o GCN & $34.03$ & $6.80$\\
+    - w/o Sent & $34.37$ & $7.55$\\
+    \hline
+    - w/o Att,GCN & $30.83$ & $4.74$\\
+    - w/o Att,Sent & $28.69$ & $4.37$\\
+    - w/o GCN,Sent & $32.60$ & $5.77$\\
+    \hline
+    - w/o Att,GCN,Sent & $28.93$ & $4.18$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+%To make the paper appealing, the introduction and 
+%conclusions have to stress that this is not realistic 
+%and that our method is designed to be completely data driven.
+
+%Maybe this 
+%should also be reflected in the title, rather than 
+%"using..." say "without external knowledge", for example.
+%Another way of 
+%presenting would be to say "Learning to create 
+%sentence semantic relation graphs for multi-document summarization". 
+
+%Another point is to point out what novel technique enables this, and 
+%how it might apply elsewhere. Is the key idea using 
+%sentence embeddings rather than words? This novel aspect needs to be 
+%highlighted, and we could speculate that it helps 
+%elsewhere as well (finding similar sentences in general). Stressing this 
+%rather than the performance on multi-document 
+%summarization would make the paper a lot more attractive for a general 
+%conference such as NIPS (as opposed to a 
+%computational linguistics conference where people would focus more on 
+%the performance on the summarization task). 
+
+%To conclude the results, \textit{SemSentSum} is the only competitive model using a fully data-driven and in addition, without the use of any supplementary (annotated) datasets. Moreover, \textit{SemSentSum} leverages sentence embeddings in order to build a sentence semantic relation graph.
+
+%dynamic graph weights
+%attention among sentences instead of uniform attentionIn this work, we introduce a fully data-driven model \textit{SentSum} not using neither hand-crafted features nor additional annotated data while being competitive with the state-of-the-art multi-document summarization systems. \textit{SentSum} leverages universal sentence embeddings so as to create a sentence semantic relation graph and trains in the meantime more specialized sentence embeddings. It allows to capture sentence semantic and similarities whereas this is not possible by using only words as commonly done. We show that these elements are the key of the success of \textit{SentSum}. In realistic scenarios, efficient hand-crafted features are cumbersome and additional annotated data is very costly to gather while sentence embeddings are easy to obtain and fast to produce. Moreover, we innovate by using sentence embeddings to compute redundancies between candidate sentences and the summary.
+
+We believe that our sentence semantic relation graph and our model can be used for other tasks including information cascade, query-focused summarization, keyphrase extraction or information retrieval etc. In addition, we plan to let the weights of the sentence semantic relation graph be dynamic during training and also introduce attention mechanism to put more focus on certain sentences.
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

@@ -1,0 +1,154 @@
+\def\year{2018}\relax
+
+\documentclass[letterpaper]{article}
+\usepackage{aaai18}
+\usepackage{times}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage{url}
+\usepackage{graphicx}
+\frenchspacing
+
+\usepackage{color}
+\usepackage[cmex10]{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{dsfont}
+\usepackage{amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{subcaption}
+\usepackage{tabularx}
+\usepackage{enumerate}
+\usepackage{cases}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\note}[1]{\textbf{\textcolor{red}{#1}}}
+
+\nocopyright
+
+\setlength{\pdfpagewidth}{8.5in}
+\setlength{\pdfpageheight}{11in}
+%PDF Info
+  \pdfinfo{
+/Title (Comparative Evaluation of SMS Spam Filtering Techniques)
+/Author (Diego Antognini and Panayiotis Danassis)}
+\setcounter{secnumdepth}{2}
+
+\begin{document}
+
+\title{Comparative Evaluation of SMS Spam Filtering Techniques}
+\author{Diego Antognini \and Panayiotis Danassis \\
+\'Ecole Polytechnique F\'ed\'erale de Lausanne \\
+Email: \{diego.antognini, panayiotis.danassis\}@epfl.ch}
+
+\maketitle
+
+\begin{abstract}
+	SMS spam is an increasing threatening problem, especially in Asia and in developing countries, where the volume of SMS spam messages has dramatically increased over the past few years. The SMS spam filtering problem can be be approached by a plethora of different techniques, ranging from simple solutions such as white and black listing, to more elaborate content-based filtering, such as the methods employed to combat email spam messages. Nevertheless, compared to the email spam filtering problem, the sms one presents many unique challenges. This is partly due to lack of benchmark datasets, but mainly due to the limited size of a standard SMS along with the abundance of idioms and abbreviations. As such, in this work we focus on both message representation techniques along to classification algorithms, and present a brief comparative evaluation of different state-of-the-art techniques. \note{Experimental results suggest...}
+\end{abstract}
+
+\section{Introduction} \label{Introduction}
+
+Spam refers to unsolicited electronic messages delivered to a large number of recipients customarily via email. In recent years returns from the email spaming are diminishing due to robust and effective filtering and user awareness \cite{delany2012sms}. Coupled with the emergence of low cost or free SMS messaging
+services, it has lead a growing number of marketers to use text messages (SMS) to target subscribers, especially in Asia and in developing countries \cite{gomez2006content} \cite{yadav2011smsassassin}.
+
+A spam classifier or filter, aims in recognizing and preventing the delivery of the aforementioned unsolicited messages. There is a vast literature in email spam filtering (e.g. see \cite{cormack2008email} \cite{blanzieri2008survey}), and state-of-the-art email spam filters are remarkably effective. Nevertheless, the sms spam filtering problem presents many unique challenges, and blindly adopting such techniques is not sufficient. This is partly due to lack of benchmark datasets, which further complicates the application of content-based filtering algorithms, but mainly due to the limited size of a standard SMS along with the abundance of idioms, informal speech (slang), and abbreviations \footnote{Here are two examples of such messages, drawn from the employed dataset: `\emph{Ok lar... Joking wif u oni...}', and \\ `\emph{dun say so early hor... U c already then say...}'.}. As such, special care is required on both the message representation and the employed classification algorithm.
+
+In this work we present a brief comparative overview on well established content-based filtering algorithms, ranging from simple models such as the naive Bayes classifier, to more complicated ones like a convolutional neural network. Moreover, we examine various message representation models, ranging from simple vector representations, to word and sentence embeddings. The latter constitute distributed vector representations able to capture a large number of syntactic and semantic word relationships, and have recently shown to be highly successful in a plethora of natural language processing applications \cite{mikolov2013distributed} \cite{bojanowski2016enriching} \cite{pagliardini2017unsupervised}.
+
+The rest of the paper is organized as follows. Section \ref{Related Work} provides a brief overview of SMS filtering techniques, Section \ref{Overview} presents the evaluated models, both for message representation and classification, and Section \ref{Experimental Evaluation} provides simulation results. Finally, Section \ref{Conclusion} concludes the paper.
+
+\section{Related Work} \label{Related Work}
+
+In this section we provide a brief overview of related work in the area of SMS spam classification.
+
+In \cite{gomez2006content} the authors have tested a number of message representation techniques and machine learning algorithms, in terms of effectiveness. They have identified the tokenization step as the most important one, since a bad representation may lead to a poor classifier. Contrary to our work, were we have employed word and sentence embeddings which can capture syntactic and semantic word relationships, the authors feed their model with a big number of attributes and used the information gain metric \cite{yang1999evaluation} as an attribute selection mechanism. They have identified as the most suitable learning algorithm the Support Vector Machines (SVM).
+
+In \cite{6133257} the authors follow an orthogonal approach and utilize non-content features from static, network and temporal views. Subsequently, they incorporated the aforementioned features to an SVM classifier, with a gain of $\approx 8\%$ in AUC (Area Under the ROC Curve).
+
+Finally, a combination of content-based and non content-based features was studied in \cite{sulaiman2016new}, in which the authors also focused on the effect of the employed model in the battery and processing performance.
+
+In this work, we limit ourselves to content-based filtering with emphasis on the message representation. Following the recent success in a variety of natural language processing applications \cite{mikolov2013distributed} \cite{bojanowski2016enriching} \cite{pagliardini2017unsupervised}, we employ word and sentence embeddings to capture syntactic and semantic word relationships.
+
+\section{Overview of Employed Models} \label{Overview}
+
+In this section we present a brief theoretical overview of the employed models for both message representation and the subsequent classification.
+
+\subsection{Message Representation Models}  \label{Representation}
+
+\subsubsection{Naive Vector Representation}  \label{Naive Vector Representation}
+
+\subsubsection{Word Embeddings}  \label{Word Embeddings}
+
+\subsubsection{Sentence Embeddings}  \label{Sentence Embeddings}
+
+\subsection{Classification Models}  \label{Classification}
+
+\subsubsection{Naive Bayes}  \label{Naive Bayes}
+
+The naive Bayes classifier determines the class $c \in \mathcal{C}$ of an input feature vector $\mathbf{h}$ by seeking the value that maximizes:
+
+\begin{equation} \label{naive bayes eq}
+	\underset{c \in \mathcal{C}}{\max} \pi_c \mathds{P} (\mathbf{h} = h | \mathbf{c} = c)
+\end{equation}
+
+\subsubsection{Logistic Regression}  \label{Logistic Regression}
+
+This model implements regularized logistic regression using a limited-memory BFGS solver \cite{liu1989limited}. The L-BFGS solver is an optimization algorithm in the family of quasi-Newton methods which does not require to analytically compute the Hessian of a function. Instead it computes an estimation which uses to steer its search through variable space. The goal is to find the class that minimizes $f()$, where $f$ is an L2-regularized cost function:
+
+\begin{equation} \label{regression eq}
+	c^* = \underset{c \in \mathcal{C}}{\arg \min} f(c) 
+\end{equation}
+
+\subsubsection{Random Forest}  \label{Random Forest}
+
+We utilize a random forest meta-classifier which fits a number of decision tree classifiers on various sub-samples of the dataset and uses averaging to improve the predictive accuracy and control over-fitting. 
+
+\subsubsection{Support Vector Machine}  \label{Support Vector Machine}
+
+We have utilized and compared two support vector machine classifiers, one with a linear and one with radial basis function (rbf) kernel. 
+
+\subsubsection{Multi-layer Perceptron}  \label{Multi-layer Perceptron}
+
+This model implements a multi-layer perceptron classifier with a rectified linear unit activation function. The weight optimization is being performed using Adam \cite{DBLP:journals/corr/KingmaB14}, an algorithm based on adaptive estimates of lower-order moments. Adam has the advantages of being computationally efficient, and has low memory requirements, which is ideal for deployment in real scenarios with large datasets used by telecommunication providers, and/or in mobile devices.
+
+\subsubsection{Adaptive Boosting}  \label{Adaptive Boosting}
+
+The adaptive boosting (AdaBoost) algorithm \cite{freund1997decision} produces an accurate classification rule by combining rough and moderately inaccurate learning algorithms (`weak learners') into a weighted sum that represents the final output of the boosted classifier. We have deployed a variant called AdaBoost-SAMME \cite{hastie2009multi}, using a decision tree classifier as the base estimator from which the boosted ensemble is built.
+
+\section{Experimental Evaluation} \label{Experimental Evaluation}
+
+We have conducted a series of simulations, and employed a variety of message representation and classification models, with goal to present a comparative overview of well-established classification techniques applied to the SMS spam filtering problem.
+
+\subsection{Dataset}  \label{Dataset}
+
+To train and evaluate our models, we have utilized the \emph{SMS Spam Collection v. 1} \footnote{\url{https://www.kaggle.com/uciml/sms-spam-collection-dataset}, \\ \url{http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/}}. The SMS Spam Collection is a free corpus, collected for research purposes. It consists of 5.574 messages in English, tagged according to being ham (legitimate) or spam ($|\mathcal{C}| = 2$).
+
+\subsection{Evaluation Setup}  \label{Evaluation Setup}
+
+\note{todo...}
+
+\subsection{Simulation Results}  \label{Simulation Results}
+
+\note{todo...}
+
+\section{Conclusion} \label{Conclusion}
+
+As the cost of sending messages over the telecommunication network decreases, SMS messaging is becoming a perfect domain for abuse. SMS spaming is thriving, especially in Asia and in developing counties. The unique text style in SMS messaging, requires additional effort in terms of message representation models, which in turn have a significant effect in the performance of the employed spam classifiers. In this work, we have presented a brief comparative overview of various message representation models, ranging from simple vector representations to state-of-the-art word and sentence embeddings, and content-based filtering models. Experimental results show \note{add results.}
+
+\section{NOTES:} \label{notes}
+
+Challenges:
+\begin{itemize}
+	\item People use abbreviations and  when communicating via SMS. E.g. `Ok lar... Joking wif u oni...', or `dun say so early hor... U c already then say...'. Future work: use domain specific corpora.
+\end{itemize}
+
+% \bibliographystyle{IEEEtran}
+% \bibliographystyle{plainnat}
+\bibliography{bibliography}
+\bibliographystyle{aaai}
+
+\end{document}

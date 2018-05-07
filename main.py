@@ -29,21 +29,39 @@ if __name__ == '__main__':
         - sentence_embeddings: Vector of 600 dimensions representing the sentence embeddings.
     '''
 
-    X_naive = transform_for_naive(data, word_to_index)
+    #X_naive = transform_for_naive(data, word_to_index)
     X_bow = transform_for_bag_of_words(data, word_to_index)
     X_tfidf = transform_for_tfidf(data)
-    X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
+    #X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
     X_se = transform_for_sentence_embeddings(data)
     X_topics = transform_for_topics(data)
     Y = create_labels(data)
 
     '''
+    #Visualize using only one kind of features
     visualize_tsne(X_naive, Y, 'naive')
     visualize_tsne(X_bow, Y, 'bow')
     visualize_tsne(X_tfidf, Y, 'tfidf')
     #Not possible as we have 3D inputs visualize_tsne(X_we, Y, 'word_emb', index_we_to_emb)
     visualize_tsne(X_se, Y, 'sent_emb')
     visualize_tsne(X_topics, Y, 'topics')
+    #'''
+
+    X_bow_se = np.concatenate([X_bow, X_se], axis=1)
+    X_bow_topics = np.concatenate([X_bow, X_topics], axis=1)
+    X_tfidf_se = np.concatenate([X_tfidf, X_se], axis=1)
+    X_tfidf_topics = np.concatenate([X_tfidf, X_topics], axis=1)
+    X_se_topics = np.concatenate([X_se, X_topics], axis=1)
+
+    '''
+    # Visualizing using the concatenation of two kind of features
+    visualize_tsne(X_bow_se, Y, 'bow-sent_emb')
+    visualize_tsne(X_bow_topics, Y, 'bow-topics')
+
+    visualize_tsne(X_tfidf_se, Y, 'tfidf-sent_emb')
+    visualize_tsne(X_tfidf_topics, Y, 'tfidf-topics')
+
+    visualize_tsne(, Y, 'sent_emb-topics')
     #'''
 
     TRAINING_SIZE = 0.7

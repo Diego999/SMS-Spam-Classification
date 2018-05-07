@@ -95,6 +95,8 @@ The naive Bayes classifier determines the class $c \in \mathcal{C}$ of an input 
 	\underset{c \in \mathcal{C}}{\max} \pi_c \mathds{P} (\mathbf{h} = h | \mathbf{c} = c)
 \end{equation}
 
+\note{Bernouilli - Multinomial - Gaussian are runned in the code}
+
 \subsubsection{Logistic Regression}  \label{Logistic Regression}
 
 This model implements regularized logistic regression using a limited-memory BFGS solver \cite{liu1989limited}. The L-BFGS solver is an optimization algorithm in the family of quasi-Newton methods which does not require to analytically compute the Hessian of a function. Instead it computes an estimation which uses to steer its search through variable space. The goal is to find the class that minimizes $f()$, where $f$ is an L2-regularized cost function:

@@ -1,6 +1,7 @@
 from utils import get_data, compute_all_representation, transform_for_topics, transform_for_naive, transform_for_bag_of_words, transform_for_tfidf, transform_for_word_embeddings, transform_for_sentence_embeddings, create_labels, visualize_tsne
 from utils import get_topics
 from utils_ML import *
+from sklearn import linear_model, ensemble, svm, neural_network, naive_bayes
 
 if __name__ == '__main__':
     data = get_data() # The data are already shuffled
@@ -29,10 +30,10 @@ if __name__ == '__main__':
         - sentence_embeddings: Vector of 600 dimensions representing the sentence embeddings.
     '''
 
-    #X_naive = transform_for_naive(data, word_to_index)
+    X_naive = transform_for_naive(data, word_to_index)
     X_bow = transform_for_bag_of_words(data, word_to_index)
     X_tfidf = transform_for_tfidf(data)
-    #X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
+    X_we = transform_for_word_embeddings(data, word_to_index_we, index_we_to_emb)
     X_se = transform_for_sentence_embeddings(data)
     X_topics = transform_for_topics(data)
     Y = create_labels(data)
@@ -67,39 +68,57 @@ if __name__ == '__main__':
     TRAINING_SIZE = 0.7
     VALIDATION_SIZE = 0.1
     TESTING_SIZE = 0.2
-
-    X, key = (X_se, 'Sentence Embeddings')
+    seed = 28111993
     classes = [0, 1]
 
-    training_size = int(len(X)*TRAINING_SIZE)
-    validation_size = int(len(X)*VALIDATION_SIZE)
-    testing_size = len(X) - training_size - validation_size
-    assert training_size + validation_size + testing_size == len(X)
+    representation_sets = [(X_naive, 'Naive'),
+                           (X_bow, 'Bag Of Words'),
+                           (X_tfidf, 'tf-idf'),
+                           #(X_we, 'Word Embeddings'), Maybe too heavy. Let's see if we could use it for another model than CNN
+                           (X_se, 'Sentence Embeddings'),
+                           (X_topics, 'Topics'),
 
-    X_train, Y_train = X[:training_size], Y[:training_size]
-    X_valid, Y_valid = X[training_size:training_size + validation_size], Y[training_size:training_size + validation_size]
-    X_test, Y_test = X[training_size + validation_size:], Y[training_size + validation_size:]
+                           (X_bow_se, 'Bag Of Words - Sentence Embeddings'),
+                           (X_bow_topics, 'Bag Of Words - Topics'),
+                           (X_tfidf_se, 'tf-idf - Sentence Embeddings'),
+                           (X_tfidf_topics, 'tf-idf - Topics'),
+                           (X_se_topics, 'Sentence Embeddings - Topics'),
+                            ]
+    for X, key in representation_sets:
+        training_size = int(len(X)*TRAINING_SIZE)
+        validation_size = int(len(X)*VALIDATION_SIZE)
+        testing_size = len(X) - training_size - validation_size
+        assert training_size + validation_size + testing_size == len(X)
 
-    # Because we are tuning with CV, with can use X_train = X_train + X_valid
-    X_train = np.array(X_train.tolist() + X_valid.tolist())
-    Y_train = np.array(Y_train.tolist() + Y_valid.tolist())
+        X_train, Y_train = X[:training_size], Y[:training_size]
+        X_valid, Y_valid = X[training_size:training_size + validation_size], Y[training_size:training_size + validation_size]
+        X_test, Y_test = X[training_size + validation_size:], Y[training_size + validation_size:]
 
-    classifiers = [('linear', linear_model.LogisticRegression(solver='lbfgs')),
-                   ('RandomForest', RandomForestClassifier(n_estimators=20)),
-                   ('SVM Linear', SVC(kernel='linear')),
-                   ('SVM RBF', SVC(kernel='rbf')),
-                   ('MLP', MLPClassifier(early_stopping=True))]
-    for clf_name, clf in classifiers:
-        print(clf_name)
-        # Should find the best set of parameters, might use the tune function in utils_ML
-        clf.fit(np.array(X_train), np.array(Y_train))
-        Y_hat = clf.predict(np.array(X_test))
-        print_and_get_accuracy(Y_test, Y_hat)
-        print_and_get_precision_recall_fscore_support(Y_test, Y_hat)
-        print_and_get_macro_micro_weighted_fscore(Y_test, Y_hat)
-        print_and_get_classification_report(Y_test, Y_hat, classes)
-        plot_confusion(Y_test, Y_hat, classes, key + ' - ' + clf_name)
-        plot_roc(Y_test, Y_hat, classes, key + ' - ' + clf_name)
-        plot_prec_rec_curve(Y_test, Y_hat, classes, key + ' - ' + clf_name)
-    plt.show()
+        # Because we are tuning with CV, with can use X_train = X_train + X_valid
+        X_train = np.array(X_train.tolist() + X_valid.tolist())
+        Y_train = np.array(Y_train.tolist() + Y_valid.tolist())
+
+        classifiers = [('Naive Bayes - Bernouilli', naive_bayes.BernoulliNB()),
+                       ('Naive Bayes - Multinomial', naive_bayes.MultinomialNB()),
+                       ('Naive Bayes - Gaussian', naive_bayes.GaussianNB()),
+                       ('Logistic Regression', linear_model.LogisticRegression(solver='lbfgs', random_state=seed)),
+                       ('RandomForest', ensemble.RandomForestClassifier(n_estimators=20, random_state=seed)),
+                       ('SVM Linear', svm.SVC(kernel='linear', random_state=seed)),
+                       ('SVM RBF', svm.SVC(kernel='rbf', random_state=seed)),
+                       ('AdaBoost', ensemble.AdaBoostClassifier(algorithm='SAMME.R', random_state=seed)),
+                       ('MLP', neural_network.MLPClassifier(early_stopping=True, random_state=seed))]
+
+        for clf_name, clf in classifiers:
+            print(clf_name)
+            # Should find the best set of parameters, might use the tune function in utils_ML
+            clf.fit(np.array(X_train), np.array(Y_train))
+            Y_hat = clf.predict(np.array(X_test))
+            print_and_get_accuracy(Y_test, Y_hat)
+            print_and_get_precision_recall_fscore_support(Y_test, Y_hat)
+            print_and_get_macro_micro_weighted_fscore(Y_test, Y_hat)
+            print_and_get_classification_report(Y_test, Y_hat, classes)
+            plot_confusion(Y_test, Y_hat, classes, key + ' - ' + clf_name)
+            plot_roc(Y_test, Y_hat, classes, key + ' - ' + clf_name)
+            plot_prec_rec_curve(Y_test, Y_hat, classes, key + ' - ' + clf_name)
+        plt.show()
 

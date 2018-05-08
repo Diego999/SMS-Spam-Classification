@@ -5,6 +5,7 @@ import numpy as np
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+CUDA_IS_AVAILABLE = torch.cuda.is_available()
 
 # Yield successive n-sized chunks from l.
 def chunks(l, n):
@@ -24,7 +25,7 @@ class KimCNN(nn.Module):
         input_channel = 1
         self.non_static_embed = nn.Embedding(emb_num, emb_dim)
         self.non_static_embed.weight.requires_grad = True
-        self.non_static_embed.weight.data.copy_(torch.from_numpy(word_emb_matrix).type(torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor)) # It's a parameter of nn.Embedding
+        self.non_static_embed.weight.data.copy_(torch.from_numpy(word_emb_matrix).type(torch.cuda.FloatTensor if CUDA_IS_AVAILABLE else torch.FloatTensor)) # It's a parameter of nn.Embedding
 
         self.conv1 = nn.Conv2d(input_channel, output_channel, (3, emb_dim), padding=(2, 0))
         self.conv2 = nn.Conv2d(input_channel, output_channel, (4, emb_dim), padding=(3, 0))
@@ -52,7 +53,7 @@ class LSTM(nn.Module):
         super(LSTM, self).__init__()
         self.non_static_embed =nn.Embedding(emb_num, emb_dim)
         self.non_static_embed.weight.requires_grad = True
-        self.non_static_embed.weight.data.copy_(torch.from_numpy(word_emb_matrix).type(torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor))  # It's a parameter of nn.Embedding
+        self.non_static_embed.weight.data.copy_(torch.from_numpy(word_emb_matrix).type(torch.cuda.FloatTensor if CUDA_IS_AVAILABLE else torch.FloatTensor))  # It's a parameter of nn.Embedding
 
         self.hid_dim = hid_dim
         self.rnn = nn.LSTM(emb_dim, hid_dim, dropout=dropout, bias=True)
@@ -73,11 +74,13 @@ class CNN_LSTM_Wrapper():
         self.type = type
         self.model = KimCNN(np.array(word_emb_matrix)) if type == 'CNN' else LSTM(np.array(word_emb_matrix))
 
-        if torch.cuda.is_available():
+        if CUDA_IS_AVAILABLE:
             self.model = self.model.cuda()
 
         self.optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=1e-3, weight_decay=0)
         self.criterion = nn.CrossEntropyLoss()
+        if CUDA_IS_AVAILABLE:
+            self.criterion = self.criterion.cuda()
 
         self.best_model = None
 
@@ -99,24 +102,24 @@ class CNN_LSTM_Wrapper():
             for X_batch, Y_batch in zip(chunks(X_train, 256), chunks(Y_train, 256)):
                 length = [[i for i, xx in enumerate(x) if xx == 0] for x in X_batch]
                 length = [l[0] if len(l) > 0 else len(X_batch[i]) for i, l in enumerate(length)]
-                temp = sorted(zip(X_batch, Y_batch, length), key=lambda x:x[-1], reverse=True)
+                temp = sorted(zip(X_batch, Y_batch, length), key=lambda x: x[-1], reverse=True)
                 X_batch = [x for x, _, _ in temp]
                 Y_batch = [y for _, y, _ in temp]
                 length = [l for _, _, l in temp]
 
-                if not torch.cuda.is_available():
+                if not CUDA_IS_AVAILABLE:
                     X_batch = Variable(torch.LongTensor(np.array(X_batch)), requires_grad=False)
                     Y_batch = Variable(torch.LongTensor(np.array(Y_batch)), requires_grad=False)
                     length = Variable(torch.LongTensor(np.array(length)), requires_grad=False)
                 else:
                     X_batch = Variable(torch.cuda.LongTensor(np.array(X_batch)), requires_grad=False)
                     Y_batch = Variable(torch.cuda.LongTensor(np.array(Y_batch)), requires_grad=False)
-                    length = Variable(torch.LongTensor(np.array(length)), requires_grad=False)
+                    length = Variable(torch.cuda.LongTensor(np.array(length)), requires_grad=False)
 
-                self.optimizer.zero_grad()
                 scores = self.model(X_batch, length)
 
                 loss = self.criterion(scores, Y_batch)
+                self.optimizer.zero_grad()
                 loss.backward()
                 torch.nn.utils.clip_grad_norm(filter(lambda p: p.requires_grad, self.model.parameters()), 1.0)
                 self.optimizer.step()
@@ -127,22 +130,22 @@ class CNN_LSTM_Wrapper():
             valid_loss = 0
             for X_batch, Y_batch in zip(chunks(X_valid, 256), chunks(Y_valid, 256)):
                 length = [[i for i, xx in enumerate(x) if xx == 0][0] for x in X_batch]
-                temp = sorted(zip(X_batch, Y_batch, length), key=lambda x:x[-1], reverse=True)
+                temp = sorted(zip(X_batch, Y_batch, length), key=lambda x: x[-1], reverse=True)
                 X_batch = [x for x, _, _ in temp]
                 Y_batch = [y for _, y, _ in temp]
                 length = [l for _, _, l in temp]
 
-                if not torch.cuda.is_available():
+                if not CUDA_IS_AVAILABLE:
                     X_batch = Variable(torch.LongTensor(np.array(X_batch)), requires_grad=False)
                     Y_batch = Variable(torch.LongTensor(np.array(Y_batch)), requires_grad=False)
                     length = Variable(torch.LongTensor(np.array(length)), requires_grad=False)
                 else:
                     X_batch = Variable(torch.cuda.LongTensor(np.array(X_batch)), requires_grad=False)
                     Y_batch = Variable(torch.cuda.LongTensor(np.array(Y_batch)), requires_grad=False)
-                    length = Variable(torch.LongTensor(np.array(length)), requires_grad=False)
+                    length = Variable(torch.cuda.LongTensor(np.array(length)), requires_grad=False)
 
                 scores = self.model(X_batch, length)
-                valid_loss += self.criterion(scores, Y_batch)
+                valid_loss += self.criterion(scores, Y_batch).data[0]
             cost_val.append(valid_loss)
 
             # Save model
@@ -161,7 +164,7 @@ class CNN_LSTM_Wrapper():
                     best_valid_loss = cost_val[-1]
                     best_model_epoch = epoch
 
-            print('{}\'th epoch'.format(epoch), '{:.5f}'.format(valid_loss.data[0]), 'Patience:{}'.format(bad_counter))
+            print('{}\'th epoch'.format(epoch), '{:.5f}'.format(valid_loss), 'Patience:{}'.format(bad_counter))
 
             if bad_counter >= self.patience:
                 print("\n\nEarly stopping. Best model at Epoch " + '%04d' % (best_model_epoch))
@@ -192,12 +195,12 @@ class CNN_LSTM_Wrapper():
             idx = np.argsort([l[0] for _, l in temp])
             length = [l[1] for _, l in temp]
 
-            if not torch.cuda.is_available():
+            if not CUDA_IS_AVAILABLE:
                 X_batch = Variable(torch.LongTensor(np.array(X_batch)), requires_grad=False)
                 length = Variable(torch.LongTensor(np.array(length)), requires_grad=False)
             else:
                 X_batch = Variable(torch.cuda.LongTensor(np.array(X_batch)), requires_grad=False)
-                length = Variable(torch.LongTensor(np.array(length)), requires_grad=False)
+                length = Variable(torch.cuda.LongTensor(np.array(length)), requires_grad=False)
 
             y_hat = self.model(X_batch, length).data
             y_hat = np.array(y_hat)[idx]

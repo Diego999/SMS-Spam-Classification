@@ -129,7 +129,7 @@ if __name__ == '__main__':
         all_scores = []
         for clf_name, clf in classifiers:
             # Use Word Embeddings only for CNN/RNN
-            if 'Word Embeddings' not in key and 'Convolutional' not in clf_name and 'Recurrent' not in clf_name:
+            if 'Word Embeddings' in key and 'Convolutional' not in clf_name and 'Recurrent' not in clf_name:
                 continue
 
             data_rep_method_folder = '{}/{}'.format(data_rep_folder, clf_name.replace(' ', '_'))

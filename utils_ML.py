@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from sklearn.metrics import precision_recall_fscore_support as score
 from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc

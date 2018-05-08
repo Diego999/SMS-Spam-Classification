@@ -2,6 +2,7 @@ from utils import get_data, compute_all_representation, transform_for_topics, tr
 from utils import get_topics
 from utils_ML import *
 from sklearn import linear_model, ensemble, svm, neural_network, naive_bayes, tree
+from CNN_LSTM_models import CNN_LSTM_Wrapper
 import os
 import time
 
@@ -9,6 +10,7 @@ import time
 if __name__ == '__main__':
     data = get_data() # The data are already shuffled
     data, word_to_index, word_to_index_we, index_we_to_emb = compute_all_representation(data)
+    emb_matrix = [[float(x) for x in (v.split() if type(v) == 'str' else v)] for _, v in sorted(index_we_to_emb.items(), key=lambda x:x[0])]
     topics, data = get_topics(data)
     '''
     word_cloud({i:x for i, x in enumerate(topics)})
@@ -81,7 +83,7 @@ if __name__ == '__main__':
     representation_sets = [(X_naive, 'Naive'),
                            (X_bow, 'Bag Of Words'),
                            (X_tfidf, 'tf-idf'),
-                           #(X_we, 'Word Embeddings'), Maybe too heavy. Let's see if we could use it for another model than CNN
+                           (X_we, 'Word Embeddings'), #Maybe too heavy. Let's see if we could use it for another model than CNN
                            (X_se, 'Sentence Embeddings'),
                            (X_topics, 'Topics'),
 
@@ -118,11 +120,18 @@ if __name__ == '__main__':
                        ('SVM Linear', svm.SVC(kernel='linear', random_state=seed)),
                        ('SVM RBF', svm.SVC(kernel='rbf', random_state=seed)),
                        ('AdaBoost', ensemble.AdaBoostClassifier(algorithm='SAMME.R', random_state=seed)),
-                       ('Feedforward Neural Network', neural_network.MLPClassifier(early_stopping=True, random_state=seed))]
+                       ('Feedforward Neural Network', neural_network.MLPClassifier(early_stopping=True, random_state=seed)),
+                       ('Convolutional Neural Network', CNN_LSTM_Wrapper('CNN', emb_matrix)),
+                       ('Recurrent Neural Network (LSTM)', CNN_LSTM_Wrapper('LSTM', emb_matrix)),
+                    ]
 
         all_Y_hats = []
         all_scores = []
         for clf_name, clf in classifiers:
+            # Use Word Embeddings only for CNN/RNN
+            if 'Word Embeddings' not in key and 'Convolutional' not in clf_name and 'Recurrent' not in clf_name:
+                continue
+
             data_rep_method_folder = '{}/{}'.format(data_rep_folder, clf_name.replace(' ', '_'))
             if not os.path.exists(data_rep_method_folder):
                 os.mkdir(data_rep_method_folder)

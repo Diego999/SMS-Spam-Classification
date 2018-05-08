@@ -83,6 +83,14 @@ In this section we present a brief theoretical overview of the employed models f
 
 \subsubsection{Word Embeddings}  \label{Word Embeddings}
 
+Blablabla
+
+As this representation leads to a $3-D$ matrix, we only use advanced neural networks as most of the methods cannot manage this kind of data easily.
+
+Blabla
+
+In order to fine-tune word embeddings to our specific domain, we update them during the backpropagation.
+
 \subsubsection{Sentence Embeddings}  \label{Sentence Embeddings}
 
 \subsection{Classification Models}  \label{Classification}
@@ -112,25 +120,32 @@ This model implements regularized logistic regression using a limited-memory BFG
 
 We utilize a random forest meta-classifier which fits a number of decision tree classifiers on various sub-samples of the dataset and uses averaging to improve the predictive accuracy and control over-fitting. 
 
+\subsubsection{Adaptive Boosting}  \label{Adaptive Boosting}
+
+The adaptive boosting (AdaBoost) algorithm \cite{freund1997decision} produces an accurate classification rule by combining rough and moderately inaccurate learning algorithms (`weak learners') into a weighted sum that represents the final output of the boosted classifier. We have deployed a variant called AdaBoost-SAMME \cite{hastie2009multi}, using a decision tree classifier as the base estimator from which the boosted ensemble is built.
+
 \subsubsection{Support Vector Machine}  \label{Support Vector Machine}
 
 We have utilized and compared two support vector machine classifiers, one with a linear and one with radial basis function (rbf) kernel. 
 
 \subsubsection{Feedforward Neural Network}  \label{Feedforward Neural Network}
 
-This model implements a multi-layer perceptron classifier with a rectified linear unit activation function. The weight optimization is being performed using Adam \cite{DBLP:journals/corr/KingmaB14}, an algorithm based on adaptive estimates of lower-order moments. Adam has the advantages of being computationally efficient, and has low memory requirements, which is ideal for deployment in real scenarios with large datasets used by telecommunication providers, and/or in mobile devices.
+This model implements a multi-layer perceptron classifier with a rectified linear unit activation function. The weight optimization is being performed using Adam \cite{DBLP:journals/corr/KingmaB14}, an algorithm based on adaptive estimates of lower-order moments. Adam has the advantages of being computationally efficient, and has low memory requirements, which is ideal for deployment in real scenarios with large datasets used by telecommunication providers, and/or in mobile devices. In order to generalize better, for all the neural models we use in addition L2 regularization, dropout \cite{Srivastava2014} where the idea is to cancel the activation of a neuron with a probability $p$ and also clip the gradient norm to $1.0$ to avoid gradient exploding.
 
-\subsubsection{Adaptive Boosting}  \label{Adaptive Boosting}
+\subsubsection{Recurrent Neural Network} \label{Recurrent Neural Network}
+As sentence are a sequence of words, this emphasize the try of using a recurrent neural network which can leverages this kind of sequenced data. In order to handle gradient vanishing/exploding problem, we use the propose Long-Short Term Memory units (LSTM) of \cite{hochreiter1997long}. \note{To continue by describing the model}.
 
-The adaptive boosting (AdaBoost) algorithm \cite{freund1997decision} produces an accurate classification rule by combining rough and moderately inaccurate learning algorithms (`weak learners') into a weighted sum that represents the final output of the boosted classifier. We have deployed a variant called AdaBoost-SAMME \cite{hastie2009multi}, using a decision tree classifier as the base estimator from which the boosted ensemble is built.
+\subsubsection{Convolutional Neural Network} \label{Convolutional Neural Network}
+Convolutional neural networks are considered state-of-the-arts for text classification (\cite{CaoLLW17, kim2014convolutional, zhang2015understanding, XiaoC16}) and therefore, we naturally implement a similar model based on \cite{kim2014convolutional}. \note{To continue by describing the model}.
+
 
 \section{Experimental Evaluation} \label{Experimental Evaluation}
 
-We have conducted a series of simulations, and employed a variety of message representation and classification models, with goal to present a comparative overview of well-established classification techniques applied to the SMS spam filtering problem.
+We have conducted a series of simulations, and employed a variety of message representation and classification models, with goal to present a comparative overview of well-established classification techniques applied to the SMS spam filtering problem. 
 
 \subsection{Dataset}  \label{Dataset}
 
-To train and evaluate our models, we have utilized the \emph{SMS Spam Collection v. 1} \footnote{\url{https://www.kaggle.com/uciml/sms-spam-collection-dataset}, \\ \url{http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/}}. The SMS Spam Collection is a free corpus, collected for research purposes. It consists of 5.574 messages in English, tagged according to being ham (legitimate) or spam ($|\mathcal{C}| = 2$).
+To train and evaluate our models, we have utilized the \emph{SMS Spam Collection v. 1} \footnote{\url{https://www.kaggle.com/uciml/sms-spam-collection-dataset}, \\ \url{http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/}}. The SMS Spam Collection is a free corpus, collected for research purposes. It consists of 5.574 messages in English, tagged according to being ham (legitimate) or spam ($|\mathcal{C}| = 2$). As spam classification is usually similar to an anomaly detection problem, the dataset is highly imbalanced as only $13.5\%$ is considered as spam.
 
 \subsection{Evaluation Setup}  \label{Evaluation Setup}
 

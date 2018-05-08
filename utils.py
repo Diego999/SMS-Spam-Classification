@@ -6,6 +6,8 @@ import math
 import random
 import numpy as np
 from sklearn.manifold import TSNE
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 

@@ -129,8 +129,12 @@ if __name__ == '__main__':
         all_scores = []
         for clf_name, clf in classifiers:
             # Use Word Embeddings only for CNN/RNN
-            if 'Word Embeddings' in key and 'Convolutional' not in clf_name and 'Recurrent' not in clf_name:
-                continue
+            if 'Word Embeddings' in key:
+                if 'Convolutional' not in clf_name and 'Recurrent' not in clf_name:
+                    continue
+            else:
+                if 'Convolutional' in clf_name or 'Recurrent' in clf_name:
+                    continue
 
             data_rep_method_folder = '{}/{}'.format(data_rep_folder, clf_name.replace(' ', '_'))
             if not os.path.exists(data_rep_method_folder):

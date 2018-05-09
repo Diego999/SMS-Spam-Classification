@@ -132,3 +132,5 @@ data/spam.pkl
 *.mtc1
 *.out
 *.synctex.gz
+
+Report/training/*

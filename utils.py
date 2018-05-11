@@ -425,9 +425,9 @@ def visualize_tsne(X, Y, filename, index_we_to_emb=None):
     tsne = TSNE(n_components=2)
 
     if index_we_to_emb is not None:
-        X_copy = X.tolist()
-        for i in range(len(X_copy)):
-            X_copy[i] = np.array([np.array(index_we_to_emb[index]) for index in X_copy[i]])
+        X_copy = []
+        for x in X.tolist():
+            X_copy.append(np.array([np.array(index_we_to_emb[index]) for index in x]).reshape(-1))
         X = np.array(X_copy)
 
     tsne_results = tsne.fit_transform(X, Y)

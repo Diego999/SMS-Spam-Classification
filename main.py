@@ -51,7 +51,7 @@ if __name__ == '__main__':
     visualize_tsne(X_naive, Y, 'naive')
     visualize_tsne(X_bow, Y, 'bow')
     visualize_tsne(X_tfidf, Y, 'tfidf')
-    #Not possible as we have 3D inputs visualize_tsne(X_we, Y, 'word_emb', index_we_to_emb)
+    visualize_tsne(X_we, Y, 'word_emb', index_we_to_emb)
     visualize_tsne(X_se, Y, 'sent_emb')
     visualize_tsne(X_topics, Y, 'topics')
     #'''

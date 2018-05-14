@@ -13,6 +13,7 @@
 \usepackage[cmex10]{amsmath}
 \usepackage{amsthm}
 \usepackage{amsfonts}
+\usepackage{footnote}
 \usepackage{dsfont}
 \usepackage{amssymb}
 \usepackage{algorithm}
@@ -79,17 +80,17 @@ The aforementioned embeddings incorporate a general syntactic and semantic meani
 
 \section{Overview of Employed Models} \label{Overview}
 
-In this section we present a brief theoretical overview of the employed models for both message representation and the subsequent classification. Unless stated otherwise, aach sentence is preprocessed via Stanford CoreNLP tools (\cite{manning-EtAl2014}): tokenization, word lowering, part-of-speech tags, lemmatization and stopwords removal. At the end, only lemmas are kept and a vocabulary of lemmas is built.
+In this section we present a brief theoretical overview of the employed models for both message representation and the subsequent classification. Unless stated otherwise, each sentence is preprocessed via Stanford CoreNLP tools \cite{manning-EtAl2014}: tokenization, word lowering, part-of-speech tags, lemmatization and stopwords removal. At the end, only lemmas are kept and a vocabulary of lemmas is built.
 
 \subsection{Message Representation Models}  \label{Representation}
 
 \subsubsection{Naive Vector Representation}  \label{Naive Vector Representation}
 
-The naive representation model results in a vector of integers, each one representing an index corresponding to the lemma.
+The naive representation model results in a vector of integers, each one representing an index corresponding to the lemma in the vocabulary.
 
 \subsubsection{Bag of Words}  \label{Bag of Words}
 
-The bag of words (BoW) model results in a vector of integers, where each dimension correspond to the frequency of a lemma in the current sentence. The aforementioned vector has fixed size, hence every sample has the same dimension (i.e. same vocabulary), which is not the case in the naive representation. Moreover, each vector has values of the same range, and it merges multiple occurrences together. Finally, the BoW representation can be used to compute similarities between two messages (e.g. using the cosine similarity measure).
+The bag of words (BoW) model results in a vector of integers, where each dimension corresponds to the frequency of a lemma in the current sentence. The aforementioned vector has fixed size, hence every sample has the same dimension (i.e. same vocabulary), which is not the case in the naive representation. Moreover, each vector has values of the same range, and it merges multiple occurrences together. Finally, the BoW representation can be used to compute similarities between two messages (e.g. using the cosine similarity measure).
 
 \subsubsection{Bag of Words with TF-IDF}  \label{TFIDF}
 
@@ -97,17 +98,17 @@ This model is similar to the BoW model yet, instead of having discrete values, i
 
 \subsubsection{Word Embeddings}  \label{Word Embeddings}
 
-Word embeddings generate a mapping from a word in our corpus to a high dimension continuous vector (e.g. $300$ dimensions). They are able to capture a large number of syntactic and semantic word relationships, and have recently shown to be highly successful in a plethora of natural language processing applications \cite{mikolov2013distributed} \cite{bojanowski2016enriching}. We have utilized Facebook's AI Research (FAIR) fastText library \cite{bojanowski2016enriching} to learn the word embeddings. The intuition for training consists of moving a fixed-size window, take a specific word in the middle and predict the probabilities of every word to be in nearby (i.e. within the window). One of the novelty of this model is they can handle Out-Of-Vocabulary (OOV) words as it also compute n-gram embeddings. Therefore, when an unknown word is encountered, the model sum all the n-gram embeddings of the given word.
+Word embeddings generate a mapping from a word in our corpus to a high dimension continuous vector (e.g. $300$ dimensions). They are able to capture a large number of syntactic and semantic word relationships, and have recently shown to be highly successful in a plethora of natural language processing applications \cite{mikolov2013distributed} \cite{bojanowski2016enriching}. We have utilized Facebook's AI Research (FAIR) fastText library \cite{bojanowski2016enriching} to learn the word embeddings. The intuition for training consists of moving a fixed-size window, take a specific word in the middle and predict the probabilities of every words to be in nearby (i.e. within the window). One of the novelty of this model, besides being fast, is they can handle Out-Of-Vocabulary (OOV) words as it also computes n-gram embeddings. Therefore, when an unknown word is encountered, the model sums all the n-gram embeddings of the given word.
 
 As this representation leads to a $3-D$ matrix, we only combine them with advanced neural network classification models as most of the other methods can not manage this kind of high dimensional data easily. Finally, we also update our word embeddings during the back-propagation phase, in order to fine tune them to our specific domain.
 
 \subsubsection{Sentence Embeddings}  \label{Sentence Embeddings}
 
-Sentence Embeddings generate a mapping from sentences to high dimensional vectors (i.e. $600$ dimensions). Generating semantic embeddings of longer pieces of text (e.g. whole sentences) has become possible due to the utilization of neural network models, and recent studies have shown that such models can outperform state-of-the-art unsupervised models \cite{pagliardini2017unsupervised}. The model is similar to the one for word embeddings however, the differences rely on the size of the window being the whole sentence but also different tricks to make the training converge.
+Sentence Embeddings generate a mapping from sentences to high dimensional vectors (e.g. $600$ dimensions). Generating semantic embeddings of longer pieces of text (e.g. whole sentences) has become possible due to the utilization of neural network models, and recent studies have shown that such models can outperform state-of-the-art unsupervised models \cite{pagliardini2017unsupervised}. The model is similar to the one for word embeddings however, the differences rely on the size of the window being the whole sentence but also different tricks to make the training converge.
 
 \subsubsection{Topic Models}  \label{Topics}
 
-Topic models aim to find patterns of words in our message collection using hierarchical probabilistic models. Specifically, we have utilized the Latent Dirichlet Allocation topic model from \cite{blei2006dynamic}. The latter is a generative probabilistic model considering documents as a mixture of topics (known a priori) and topics as a mixture of words. Each topic has a multi-nomial distribution sampled from a Dirichlet distribution (with parameter $\alpha$). Same applies for the word distribution given the topic (with parameter $\beta$).
+Topic models aim to find patterns of words in our message collection using (hierarchical) probabilistic models. Specifically, we have utilized the Latent Dirichlet Allocation topic model from \cite{blei2006dynamic}. The latter is a generative probabilistic model considering documents as a mixture of topics (known a priori) and topics as a mixture of words. Each topic has a multi-nomial distribution sampled from a Dirichlet distribution (with parameter $\alpha$). Same applies for the word distribution given the topic (with parameter $\beta$).
 
 \subsection{Classification Models}  \label{Classification}
 
@@ -121,7 +122,7 @@ The naive Bayes classifier determines the class $c \in \mathcal{C}$ of an input 
 
 \subsubsection{Logistic Regression}  \label{Logistic Regression}
 
-This model implements regularized logistic regression using a limited-memory BFGS solver \cite{liu1989limited}. The L-BFGS solver is an optimization algorithm in the family of quasi-Newton methods which does not require to analytically compute the Hessian of a function. Instead it computes an estimation which uses to steer its search through variable space. The goal is to find the class that minimizes $f()$, where $f$ is an L2-regularized cost function (Equation~\ref{regression eq}).
+This model implements regularized logistic regression using a limited-memory BFGS solver \cite{liu1989limited}. The L-BFGS solver is an optimization algorithm in the family of quasi-Newton methods which does not require to analytically compute the Hessian of a function. Instead it computes an estimation which uses to steer its search through variable space. The goal is to find the class that minimizes $f(.)$, where $f$ is an L2-regularized cost function (Equation~\ref{regression eq}). In addition, it provides a high-level of interpretability.
 
 \begin{equation} \label{regression eq}
 	c^* = \underset{c \in \mathcal{C}}{\arg \min} f(c) 
@@ -129,45 +130,45 @@ This model implements regularized logistic regression using a limited-memory BFG
 
 \subsubsection{Decision Tree} \label{Decision Tree}
 
-This model implements a decision tree classifier using the Gini impurity metric. Gini impurity measures the probability that a randomly chosen element from the set would be incorrectly labeled if it was randomly labeled according to the distribution of labels in the subset.
+This predictive model implements a decision tree classifier using the Gini impurity metric. Gini impurity measures the probability that a randomly chosen element from the set would be incorrectly labeled if it was randomly labeled according to the distribution of labels in the subset. This model recursively discretizes the space with respect to the feature obtained via Gini. Therefore, this leads to a highly interpretable model.
 
 \subsubsection{Random Forest}  \label{Random Forest}
 
-We utilize a random forest meta-classifier which fits a number of decision tree classifiers on various sub-samples of the dataset and the feature setand uses averaging to improve the predictive accuracy, reduce variance, and control over-fitting. Moreover, random forests do not sample the entire set of features.
+We utilize a random forest meta-classifier which fits a number of decision tree classifiers on various sub-samples of the dataset and the feature set. It uses averaging to improve the predictive accuracy, reduce variance, and control over-fitting. Moreover, random forests do not sample the entire set of features. Unsurprisingly, we expect random forests to perform better than a single decision tree.
 
 \subsubsection{Adaptive Boosting}  \label{Adaptive Boosting}
 
-The adaptive boosting (AdaBoost) algorithm \cite{freund1997decision} produces an accurate classification rule by combining rough and moderately inaccurate learning algorithms (`weak learners') into a weighted sum that represents the final output of the boosted classifier. We have deployed a variant called AdaBoost-SAMME \cite{hastie2009multi}, using a decision tree classifier as the base estimator from which the boosted ensemble is built.
+The adaptive boosting (AdaBoost) algorithm \cite{freund1997decision} produces an accurate classification rule by combining rough and moderately inaccurate learning algorithms (`weak learners') into a weighted sum that represents the final output of the boosted classifier. We have deployed a variant called AdaBoost-SAMME \cite{hastie2009multi}, using a decision tree classifier as the base estimator from which the boosted ensemble is built. We expect it performs on par with random forests. 
 
 \subsubsection{Support Vector Machine}  \label{Support Vector Machine}
 
-As support vector machine have been identified as the most suitable learning algorithm (\cite{yang1999evaluation}), we naturally have utilized it and compared two support vector machine classifiers, one with a linear and one with radial basis function (rbf) kernel. 
+As support vector machine have been identified as the most suitable learning algorithm (\cite{yang1999evaluation}), we naturally have utilized it and compared two support vector machine classifiers, one with a linear and one with radial basis function (rbf) kernel. It uses the Hinge loss as objective function and tries to maximize the margin (i.e. hyperplane) between all the samples. In order to achieve this, it leverages kernel function mapping the original dimensional space into much higher. Functions can be used as long as their kernel matrix is symmetric positive semi-definite, which is the case with rbf and linear kernels.
 
 \subsubsection{Feedforward Neural Network}  \label{Feedforward Neural Network}
 
-This model implements a multi-layer perceptron classifier with a rectified linear unit activation function. The weight optimization is being performed using Adam \cite{DBLP:journals/corr/KingmaB14}, an algorithm based on adaptive estimates of lower-order moments. Adam has the advantages of being computationally efficient, and has low memory requirements, which is ideal for deployment in real scenarios with large datasets used by telecommunication providers, and/or in mobile devices. In order to improve generalization we use, in addition to L2 regularization, dropout \cite{Srivastava2014} and we clip the gradient norm to $1.0$ to avoid gradient exploding. Dropout cancels the activation of a neuron with a probability $p$. We have employed the aforementioned techniques to the subsequent neural network models as well.
+This model implements a multi-layer perceptron classifier with a rectified linear unit activation function. The weight optimization is being performed using Adam \cite{DBLP:journals/corr/KingmaB14}, an algorithm based on adaptive estimates of lower-order moments. Adam has the advantages of being computationally efficient, improves convergence time and has low memory requirements, which is ideal for deployment in real scenarios with large datasets used by telecommunication providers, and/or in mobile devices. In order to improve generalization we use, in addition to L2 regularization, dropout \cite{Srivastava2014} and we clip the gradient norm to $1.0$ to avoid gradient exploding. Dropout cancels the activation of a neuron with a probability $p$. We have employed the aforementioned techniques to the subsequent neural network models as well.
 
 \subsubsection{Recurrent Neural Network} \label{Recurrent Neural Network}
 
-A recurrent neural network (RNN) is a neural network where connections between units form a directed graph along a sequence. As sentences are a sequence of words, this makes an RNN an ideal candidate model to leverages this kind of sequential data. In order to handle the gradient vanishing / exploding problem, we utilize the Long-Short Term Memory units (LSTM) of \cite{hochreiter1997long}. Our model consits of a single LSTM layer followed by max pooling and a simple feedforward neural network.
+A recurrent neural network (RNN) is a neural network where connections between units form a directed graph along a sequence. As sentences are a sequence of words, this makes RNNs an ideal candidate model to leverages this kind of sequential data. In order to handle the gradient vanishing / exploding problem, we utilize the Long-Short Term Memory units (LSTM) of \cite{hochreiter1997long}. Our model consists of a single LSTM layer followed by max pooling and a simple feedforward neural network.
 
 \subsubsection{Convolutional Neural Network} \label{Convolutional Neural Network}
 
-Convolutional neural networks (CNN) is a class of neural network where connectivity pattern between neurons partially overlaps, which makes them ideal for certain domains (e.g. image processing). CNNs are also considered state-of-the-art in text classification \cite{CaoLLW17} \cite{kim2014convolutional} \cite{zhang2015understanding} \cite{XiaoC16}. Motivated by their recent success in such similar domains, we have implemented a CNN classifier based on \cite{kim2014convolutional}.
+Convolutional neural networks (CNN) is a class of neural network where connectivity pattern between neurons partially overlaps, which makes them ideal for certain domains (e.g. image processing). It relies to translation and rotation invariance properties. Although this might not make sense to apply them on text rather than images, as translation and rotation are not defined for texts, surprisingly CNNs are also considered state-of-the-art in text classification \cite{CaoLLW17} \cite{kim2014convolutional} \cite{zhang2015understanding} \cite{XiaoC16} and much more text applications. Motivated by their recent success in such similar domains, we have implemented a CNN classifier based on \cite{kim2014convolutional}.
 
 \section{Experimental Evaluation} \label{Experimental Evaluation}
 
-We have conducted a series of simulations, and in this section we present a comparative overview of the presented models applied to the SMS spam filtering problem. All the models described in Section \ref{Overview} were trained and evaluated on a Intel Xeon E5-2640V4, 2.4GHz system with 32GB of RAM.
+We have conducted a series of simulations, and in this section we present a comparative overview of the presented representations and models applied to the SMS spam filtering problem. All the models described in Section \ref{Overview} were trained and evaluated on a Intel Xeon E5-2640V4, 2.4GHz system with 32GB of RAM and a GeForce Titan Xp GPU to improves training and inference times for advanced neural networks.
 
 \subsection{Dataset}  \label{Dataset}
 
-To train and evaluate our models, we have utilized the \emph{SMS Spam Collection v. 1} \footnote{\url{https://www.kaggle.com/uciml/sms-spam-collection-dataset}, \\ \url{http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/}}. The SMS Spam Collection is a free corpus, collected for research purposes. It consists of 5.574 messages in English, tagged according to being ham (legitimate) or spam ($|\mathcal{C}| = 2$). As spam classification is usually similar to an anomaly detection problem, the dataset is highly imbalanced as only $13.5\%$ is considered as spam.
+To train and evaluate our models, we have utilized the \emph{SMS Spam Collection v. 1} \footnote{\url{https://www.kaggle.com/uciml/sms-spam-collection-dataset}, \\ \url{http://www.dt.fee.unicamp.br/~tiago/smsspamcollection/}}. The SMS Spam Collection is a free corpus, collected for research purposes. It consists of $5\,574$ messages in English, tagged according to being ham (legitimate) or spam ($|\mathcal{C}| = 2$). As spam classification is usually similar to an anomaly detection problem, the dataset is highly imbalanced as only $13.5\%$ is considered as spam.
 
 \subsection{Simulation Results}  \label{Simulation Results}
 
 \subsubsection{Message Representation}  \label{Representation Results}
 
-We first begin by examining the impact of the message representation model. Figure~\ref{fig: plot_representations} presents a 2-D visualization of the SMS Spam Collection dataset. We have employed the t-distributed stochastic neighbor embedding (t-SNE) algorithm \cite{maaten2008visualizing}, a nonlinear dimensionality reduction technique well-suited for visualizing high dimensional data in a low-dimensional space. Sub-figures~\ref{fig: naive} - \ref{fig: sent_emb} depict each of the message representation models of Section \ref{Representation}, while sub-figure~\ref{fig: bow-topics} depicts the concatenation of the bag of words and topics models.
+We first begin by examining the impact of the message representation model. Figure~\ref{fig: plot_representations} presents a 2-D visualization of the SMS Spam Collection dataset. We have employed the t-distributed stochastic neighbor embedding (t-SNE) algorithm \cite{maaten2008visualizing}, a nonlinear dimensionality reduction technique well-suited for visualizing high dimensional data in a low-dimensional space. We choose this latter as opposed to Principal Component Analysis (PCA) due to its nonlinear nature. Sub-figures~\ref{fig: naive} - \ref{fig: sent_emb} depict each of the message representation model of Section \ref{Representation}, while sub-figure~\ref{fig: bow-topics} depicts the concatenation of the bag of words and topics models.
 
 The aforementioned figures make immediately apparent the importance of the message representation model. Models like the BoW (sub-figure~\ref{fig: bow}) result to almost linearly separable data, which suggest that with a strong message representation model, even a linear classifier (e.g. logistic regression) might be enough. According to our employed t-SNE visualization algorithm, the best message representation model is the topics model with four topics (sub-figure~\ref{fig: topics}). To better visualize the patterns discovered by the topics models and understand why this can lead to a better clattering, Figure~\ref{fig: word_cloud} depicts a word cloud of the words in each of the aforementioned four topics. The size of each word indicates its frequency. Topics \#2 \& \#3 have high number of tokens like `phone numbers', `urls', `free', `win', `text', `call', etc., which are characteristic in spam messages. On the other hand, topics \#1 \& \#4 contain innocuous words. Specifically, topic \#1 seems to contains `regular' words, and topic \#2 slang and abbreviations; both of which are common in ham messages.
 
@@ -181,11 +182,13 @@ Deciding on a message representation model is the first part of the final classi
 
 Along with the F1 score, another important metric for our models is their computational complexity. To evaluate the latter, Table~\ref{tb: time} presents an overview of the training and testing time required by each combination of the employed classification / message representation model.
 
-The highest performing models in terms of the F1 score are the Recurrent Neural Network and the Convolutional Neural Network, achieving 0.978, and 0.976 respectively. The aforementioned models use the word embeddings to represent a message. Hence, our results are in par with recent results in other NLP domains. The models that are regarded as the best (RNNs, CNNs, and Word Embeddings), are the ones that achieved the highest scores in our SMS spam classification scenario as well. Rather surprising though, the multinomial naive Bayes classifier was able to achieve similar performance, specifically 0.971 in F1 score (less than 1\% worse than the best performing model). The latter corroborates the fact that the message representation model has a significant impact on the overall performance. The naive Bayes classifier achieved it's best performance using the concatenated Bag of Words and Topics models. Furthermore, the naive Bayes classifier is significantly less computational expensive, since it required $98\%$ less training time, and $44\%$ less testing time than the fastest high performing model (RNN). Moreover, it only uses CPU and do not leverage GPUs. As such, it provides the ideal trade-off between high performance (F1 score) and low computational complexity. Finally, contrary to the cumbersome neural network models, the naive Bayes classifier can easily handle on-line updates.
+The highest performing models in terms of the F1 score are the Recurrent Neural Network and the Convolutional Neural Network, achieving 0.978, and 0.976 respectively. The aforementioned models use the word embeddings to represent a message. Hence, our results are in par with recent results in other NLP domains. The models that are regarded as the best (RNNs, CNNs, and Word Embeddings), are the ones that achieved the highest scores in our SMS spam classification scenario as well. Rather surprising though, the multinomial naive Bayes classifier was able to achieve similar performance, specifically 0.971 in F1 score (less than 1\% worse than the best performing model). The latter corroborates the fact that the message representation model has a significant impact on the overall performance. The naive Bayes classifier achieved it's best performance using the concatenated Bag of Words and Topics models. Unsurprisingly, with respect to the training and testing speed, the simplest models achieve the best times whereas advanced ones require more time to train and infer due to their complexity.
+
+Furthermore, the naive Bayes classifier is significantly less computational expensive, since it required $98\%$ less training time, and $44\%$ less testing time than the fastest high performing model (RNN). Moreover, it only uses CPU and do not leverage GPUs. As such, it provides the ideal trade-off between high performance (F1 score) and low computational complexity. Finally, contrary to the cumbersome neural network models, the naive Bayes classifier can easily handle on-line updates \cite{chan1982updating}. With respect to the BoW and Topics models message representation model, we can easily update it by adding an extra dimension when a new word is encountered. The number of topics should not change that much but the topic model can also support online updates \cite{canini2009online}.
 
 \section{Conclusion} \label{Conclusion}
 
-As the cost of sending messages over the telecommunication network decreases, SMS messaging is becoming a perfect domain for abuse. SMS spaming is thriving, especially in Asia and in developing counties. The unique text style in SMS messaging, requires additional effort in terms of message representation models, which in turn have a significant effect in the performance of the employed spam classifiers. In this work, we have presented a brief comparative overview of various message representation models, ranging from simple vector representations to state-of-the-art word and sentence embeddings, and content-based filtering models. Our best performing model (RNN) achieves 0.978 F1 score. Amongst the best performing models was the naive Bayes classifier with BoW and Topics models which managed to achieve 0.971 F1 score, but with significantly less computational complexity. The latter constitutes the naive Bayes a promising candidate for on-device implementation of SMS spam filtering (\cite{chan1982updating}).
+As the cost of sending messages over the telecommunication network decreases, SMS messaging is becoming a perfect domain for abuse. SMS spaming is thriving, especially in Asia and in developing counties. The unique text style in SMS messaging, requires additional effort in terms of message representation models, which in turn have a significant effect in the performance of the employed spam classifiers. In this work, we have presented a brief comparative overview of various message representation models, ranging from simple vector representations to state-of-the-art word and sentence embeddings, and content-based filtering models. Our best performing model (RNN) achieves 0.978 F1 score. Amongst the best performing models was the naive Bayes classifier with BoW and Topics models which managed to achieve 0.971 F1 score, but with significantly less computational complexity, resource requirements, training and inference time. More over, both the naive Bayes classifier and the message representation model can be easily updated with online learning. The latter constitutes the naive Bayes a promising candidate for on-device implementation of SMS spam filtering.
 
 \begin{figure*}[p]
 	\centering
@@ -251,21 +254,23 @@ As the cost of sending messages over the telecommunication network decreases, SM
 \begin{landscape}
 	\begin{table}[t!]
 		\centering
-		\caption{Overview of the F1-score achieved by each combination of the employed classification / message representation model.}
+		\caption{Overview of the F1-score achieved by each combination of the employed classification / message representation model. Bold numbers represent the top three models achieving the highest scores while * denotes model that could not be trained in less than 24 hours or converge.}
 		\label{tb: macro_f1}
 		\begin{tabular}{@{}rccccccc@{}}
 			\toprule
 			                                               & Naive & BoW & BoW / TF-IDF & Word Embeddings & Sentence Embeddings & Topics & BoW \& Topics \\ \midrule
-			\multicolumn{1}{r|}{Naive Bayes (Bernoulli)}   & 0.707 &     & 0.951        &                 & 0.669               & 0.460  & 0.951         \\
-			\multicolumn{1}{r|}{Naive Bayes (Multinomial)} & 0.682 &     & 0.962        &                 &                     & 0.460  & \textbf{0.971}\\
-			\multicolumn{1}{r|}{Naive Bayes (Gaussian)}    & 0.159 &     & 0.748        &                 & 0.573               & 0.837  & 0.748         \\
-			\multicolumn{1}{r|}{Logistic Regression}       & 0.600 &     & 0.966        &                 & 0.912               & 0.880  & 0.964         \\
-			\multicolumn{1}{r|}{Decision Tree}             & 0.799 &     & 0.960        &                 & 0.793               & 0.888  & 0.950         \\
-			\multicolumn{1}{r|}{Random Forest}             & 0.826 &     & 0.964        &                 & 0.834               & 0.895  & 0.956         \\
-			\multicolumn{1}{r|}{SVM (Linear)}              &       &     & 0.968        &                 & 0.918               & 0.878  & 0.962         \\
-			\multicolumn{1}{r|}{SVM (RBF)}                 & 0.691 &     & 0.460        &                 & 0.805               & 0.876  & 0.460         \\
-			\multicolumn{1}{r|}{AdaBoost}                  & 0.836 &     & 0.959        &                 & 0.905               & 0.878  & 0.951         \\
-			\multicolumn{1}{r|}{Feed-forward Neural Net}   & 0.659 &     & 0.951        &                 & 0.931               & 0.460  & 0.956         \\
+			\multicolumn{1}{r|}{Naive Bayes (Bernoulli)}   & 0.707 & 0.951 & 0.951        &                 & 0.669               & 0.460  & 0.951         \\
+			\multicolumn{1}{r|}{Naive Bayes (Multinomial)} & 0.682 & 0.962 & 0.931        &                 & N/A*                & 0.460  & \textbf{0.971}\\
+			\multicolumn{1}{r|}{Naive Bayes (Gaussian)}    & 0.159 & 0.748 & 0.745        &                 & 0.573               & 0.837  & 0.748         \\
+			\multicolumn{1}{r|}{Logistic Regression}       & 0.600 & 0.966 & 0.922        &                 & 0.912               & 0.880  & 0.964         \\
+			\hline
+			\multicolumn{1}{r|}{Decision Tree}             & 0.799 & 0.960 & 0.957        &                 & 0.793               & 0.888  & 0.950         \\
+			\multicolumn{1}{r|}{Random Forest}             & 0.826 & 0.964 & 0.960        &                 & 0.834               & 0.895  & 0.956         \\
+			\multicolumn{1}{r|}{AdaBoost}                  & 0.836 & 0.959 & 0.959        &                 & 0.905               & 0.878  & 0.951         \\
+			\multicolumn{1}{r|}{SVM (Linear)}              & N/A*   & 0.968 & 0.958        &                 & 0.918               & 0.878  & 0.962         \\
+			\multicolumn{1}{r|}{SVM (RBF)}                 & 0.691 & 0.460 & 0.460        &                 & 0.805               & 0.876  & 0.460         \\
+			\hline
+			\multicolumn{1}{r|}{Feed-forward Neural Net}   & 0.659 & 0.951 & 0.948        &                 & 0.931               & 0.460  & 0.956         \\
 			\multicolumn{1}{r|}{Recurrent Neural Net}      &       &     &              & \textbf{0.978}  &                     &        &               \\
 			\multicolumn{1}{r|}{Convolutional Neural Net}  &       &     &              & \textbf{0.976}  &                     &        &               \\ \bottomrule
 		\end{tabular}
@@ -275,24 +280,26 @@ As the cost of sending messages over the telecommunication network decreases, SM
 \begin{landscape}
 	\begin{table}[t!]
 		\centering
-		\caption{Overview of the training and testing time (in seconds) required by each combination of the employed classification / message representation model.}
+		\caption{Overview of the training and testing time (in seconds) required by each combination of the employed classification / message representation model. Bold numbers represent the top three models achieving the highest F1 scores while * denotes model that could not be trained in less than 24 hours or converge.}
 		\label{tb: time}
 		\begin{tabular}{@{}r|lclclclclclclc@{}}
 			\toprule
 			                          & \multicolumn{2}{c}{Naive}         & \multicolumn{2}{c}{BoW}           & \multicolumn{2}{c}{BoW / TF-IDF}  & \multicolumn{2}{c}{Word Embeddings} & \multicolumn{2}{c}{Sentence Embeddings} & \multicolumn{2}{c}{Topics}             & \multicolumn{2}{c}{BoW \& Topics}            \\
 			\multicolumn{1}{l|}{}     & \multicolumn{1}{c}{Train} & Test  & \multicolumn{1}{c}{Train} & Test  & \multicolumn{1}{c}{Train} & Test  & \multicolumn{1}{c}{Train} & Test    & \multicolumn{1}{c}{Train}     & Test    & \multicolumn{1}{c}{Train}    & Test    & \multicolumn{1}{c}{Train}    & Test          \\ \midrule
 			Naive Bayes (Bernoulli)   & 0.011                     & 0.001 & 0.373                     & 0.092 & 0.353                     & 0.086 &                           &         & 0.059                         & 0.013   & 0.001                        & 0.000   & 0.607                        & 0.144         \\
-			Naive Bayes (Multinomial) & 0.004                     & 0.000 & 0.172                     & 0.033 & 0.164                     & 0.032 &                           &         &                               &         & 0.001                        & 8.249   & \textbf{0.229}               & \textbf{0.052}\\
+			Naive Bayes (Multinomial) & 0.004                     & 0.000 & 0.172                     & 0.033 & 0.164                     & 0.032 &                           &         & N/A*                          &  N/A*   & 0.001                        & 0.000   & \textbf{0.229}               & \textbf{0.052}\\
 			Naive Bayes (Gaussian)    & 0.011                     & 0.002 & 0.468                     & 0.118 & 0.500                     & 0.126 &                           &         & 0.038                         & 0.008   & 0.001                        & 0.000   & 0.654                        & 0.181         \\
 			Logistic Regression       & 0.097                     & 0.000 & 0.925                     & 0.024 & 0.901                     & 0.032 &                           &         & 0.200                         & 0.001   & 0.021                        & 0.000   & 0.963                        & 0.050         \\
+			\hline
 			Decision Tree             & 0.041                     & 0.000 & 9.982                     & 0.030 & 6.426                     & 0.026 &                           &         & 1.936                         & 0.001   & 0.013                        & 0.000   & 12.060                       & 0.045         \\
 			Random Forest             & 0.085                     & 0.007 & 4.190                     & 0.136 & 2.616                     & 0.087 &                           &         & 0.902                         & 0.008   & 0.107                        & 0.006   & 4.380                        & 0.188         \\
-			SVM (Linear)              &                           &       & 17.196                    & 3.791 & 28.913                    & 7.335 &                           &         & 2.415                         & 0.356   & 0.035                        & 0.005   & 15.208                       & 3.148         \\
-			SVM (RBF)                 & 3.513                     & 0.834 & 45.042                    & 11.604& 40.929                    & 9.913 &                           &         & 3.866                         & 0.780   & 0.099                        & 0.016   & 41.349                       & 10.146        \\
 			AdaBoost                  & 0.411                     & 0.013 & 17.084                    & 0.205 & 23.387                    & 0.216 &                           &         & 14.000                        & 0.024   & 0.169                        & 0.009   & 23.845                       & 0.219         \\
+			SVM (Linear)              & N/A*                      &  N/A*      & 17.196                    & 3.791 & 28.913                    & 7.335 &                           &         & 2.415                         & 0.356   & 0.035                        & 0.005   & 15.208                       & 3.148         \\
+			SVM (RBF)                 & 3.513                     & 0.834 & 45.042                    & 11.604& 40.929                    & 9.913 &                           &         & 3.866                         & 0.780   & 0.099                        & 0.016   & 41.349                       & 10.146        \\
+			\hline
 			Feed-forward Neural Net   & 0.179                     & 0.002 & 4.149                     & 0.049 & 13.387                    & 0.062 &                           &         & 1.565                         & 0.011   & 0.058                        & 0.001   & 6.795                        & 0.050         \\
-			Recurrent Neural Net      &                           &       &                           &       &                           &       & 11.210                    & 0.093   &                               &         &                              &         &                              &               \\
-			Convolutional Neural Net  &                           &       &                           &       &                           &       & 21.489                    & 0.225   &                               &         &                              &         &                              &               \\ \bottomrule
+			Recurrent Neural Net      &                           &       &                           &       &                           &       & \textbf{11.210}                    & \textbf{0.093}   &                               &         &                              &         &                              &               \\
+			Convolutional Neural Net  &                           &       &                           &       &                           &       & \textbf{21.489}                    & \textbf{0.225}   &                               &         &                              &         &                              &               \\ \bottomrule
 		\end{tabular}
 	\end{table}
 \end{landscape}
